@@ -2,12 +2,12 @@
 
 Developer-oriented clipboard inspector for Apple platforms. It watches the pasteboard, captures each change as a snapshot, and lets you inspect every representation the system exposes — not just the “obvious” text or image.
 
-**Current release: 0.1.0 (MVP)**
+**Current release: 0.2.0**
 
 ## What it does
 
 - Polls the system pasteboard and records changes automatically
-- Classifies representations (plain text, URL, image, color, and unknowns)
+- Classifies representations (plain text, rich text, URL, image, color, and unknowns)
 - Shows a three-pane inspector UI:
   - **History** — recent snapshots with readable titles
   - **Representations** — all UTTypes in the selected snapshot (primary first)

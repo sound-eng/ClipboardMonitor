@@ -7,17 +7,28 @@ import XCTest
 import UniformTypeIdentifiers
 @testable import ClipboardMonitor
 
+#if canImport(AppKit)
+import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
+
 final class ClipboardClassifierOrderingTests: XCTestCase {
     private let classifier = ClipboardClassifier.default
 
-    func test_primaryRepresentation_prefersMetadataBearingType() {
-        let text = TestFixtures.representation(type: .utf8PlainText, string: "https://example.com")
-        let url = TestFixtures.representation(type: .url, string: "https://example.com")
+    func test_primaryRepresentation_prefersRichTextOverPlainText() throws {
+        let text = TestFixtures.representation(type: .utf8PlainText, string: "Hello")
+        let ns = NSAttributedString(string: "Hello")
+        let rtfData = try ns.data(
+            from: NSRange(location: 0, length: ns.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
+        let rtf = TestFixtures.representation(type: .rtf, data: rtfData)
 
-        // Text has higher inspector priority, but URL exposes Metadata — URL wins.
-        let primary = classifier.primaryRepresentation(in: [text, url])
+        // Both supported with metadata; RTF has higher inspector priority.
+        let primary = classifier.primaryRepresentation(in: [text, rtf])
 
-        XCTAssertEqual(primary?.rawType, UTType.url.identifier)
+        XCTAssertEqual(primary?.rawType, UTType.rtf.identifier)
     }
 
     func test_primaryRepresentation_prefersHigherPriorityAmongMetadataTypes() {
@@ -30,7 +41,7 @@ final class ClipboardClassifierOrderingTests: XCTestCase {
         XCTAssertEqual(primary?.rawType, UTType.png.identifier)
     }
 
-    func test_orderedRepresentations_metadataFirstThenPriorityThenUnknown() {
+    func test_orderedRepresentations_byPriorityThenUnknown() {
         let text = TestFixtures.representation(type: .utf8PlainText, string: "hello")
         let url = TestFixtures.representation(type: .url, string: "https://example.com")
         let unknown = TestFixtures.unknownRepresentation()
@@ -38,13 +49,13 @@ final class ClipboardClassifierOrderingTests: XCTestCase {
 
         let ordered = classifier.orderedRepresentations([unknown, text, url, image])
 
-        // Image + URL have metadata (image higher priority); text does not; unknown last.
+        // All three known types expose metadata; order is inspector priority.
         XCTAssertEqual(
             ordered.map(\.rawType),
             [
                 UTType.png.identifier,
-                UTType.url.identifier,
                 UTType.utf8PlainText.identifier,
+                UTType.url.identifier,
                 unknown.rawType
             ]
         )

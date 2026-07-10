@@ -7,6 +7,12 @@ import XCTest
 import UniformTypeIdentifiers
 @testable import ClipboardMonitor
 
+#if canImport(AppKit)
+import AppKit
+#elseif canImport(UIKit)
+import UIKit
+#endif
+
 // MARK: - URLClipboardInspector Tests
 
 final class URLClipboardInspectorTests: XCTestCase {
@@ -106,8 +112,39 @@ final class PlainTextInspectorTests: XCTestCase {
         }
     }
 
+    func test_utf16External_littleEndianWithoutBOM_doesNotLookChinese() {
+        // Real pasteboards often store LE code units in the "external" UTI with no BOM.
+        // Decoding that as BE yields CJK-looking garbage (e.g. 䠀攀…).
+        let text = "Hello"
+        let data = text.data(using: .utf16LittleEndian)!
+        let rep = TestFixtures.representation(type: .utf16ExternalPlainText, data: data)
+
+        let result = inspector.inspect(rep)
+
+        if case .plainText(let decoded, let encoding) = result {
+            XCTAssertEqual(decoded, text)
+            XCTAssertEqual(encoding, .utf16LittleEndian)
+        } else {
+            XCTFail("Expected .plainText, got: \(String(describing: result))")
+        }
+    }
+
+    func test_utf16External_respectsBOM() {
+        let text = "Hello"
+        let data = text.data(using: .utf16)!
+        let rep = TestFixtures.representation(type: .utf16ExternalPlainText, data: data)
+
+        let result = inspector.inspect(rep)
+
+        if case .plainText(let decoded, _) = result {
+            XCTAssertEqual(decoded, text)
+        } else {
+            XCTFail("Expected .plainText, got: \(String(describing: result))")
+        }
+    }
+
     func test_unsupportedType_returnsNil() {
-        // .png is not in the PlainTextInspector's typeEncodingMap
+        // .png is not in the PlainTextInspector's supported types
         let rep = TestFixtures.representation(type: .png, data: Data([0x89]))
 
         let result = inspector.inspect(rep)
@@ -156,6 +193,55 @@ final class ImageClipboardInspectorTests: XCTestCase {
         } else {
             XCTFail("Expected .image, got: \(String(describing: result))")
         }
+    }
+}
+
+// MARK: - RichTextInspector Tests
+
+final class RichTextInspectorTests: XCTestCase {
+
+    private let inspector = RichTextInspector()
+
+    func test_rtf_returnsRichText() throws {
+        let ns = NSAttributedString(string: "Hello RTF")
+        let data = try ns.data(
+            from: NSRange(location: 0, length: ns.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
+        let rep = TestFixtures.representation(type: .rtf, data: data)
+
+        let result = inspector.inspect(rep)
+
+        guard case .richText(let attributed) = result else {
+            return XCTFail("Expected .richText, got: \(String(describing: result))")
+        }
+        XCTAssertEqual(String(attributed.characters), "Hello RTF")
+    }
+
+    func test_flatRTF_returnsRichText() throws {
+        let ns = NSAttributedString(string: "Flat")
+        let data = try ns.data(
+            from: NSRange(location: 0, length: ns.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
+        let rep = TestFixtures.representation(type: .flatRTF, data: data)
+
+        let result = inspector.inspect(rep)
+
+        guard case .richText(let attributed) = result else {
+            return XCTFail("Expected .richText, got: \(String(describing: result))")
+        }
+        XCTAssertEqual(String(attributed.characters), "Flat")
+    }
+
+    func test_emptyData_returnsNil() {
+        let rep = TestFixtures.representation(type: .rtf, data: Data())
+        XCTAssertNil(inspector.inspect(rep))
+    }
+
+    func test_corruptData_returnsNil() {
+        let rep = TestFixtures.representation(type: .rtf, data: Data([0x00, 0x01, 0x02]))
+        XCTAssertNil(inspector.inspect(rep))
     }
 }
 

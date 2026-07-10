@@ -26,6 +26,8 @@ struct PreviewFacetView: View {
                 Text(text)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
+            case .richText(let attributed):
+                richTextPreview(attributed)
             case .color:
                 colorPreview
             case .unknown:
@@ -33,6 +35,68 @@ struct PreviewFacetView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder
+    private func richTextPreview(_ attributed: AttributedString) -> some View {
+        // Attributes stay untouched; only the chrome matches the document "paper"
+        // so themed Overview chrome doesn't clash with RTF backgrounds.
+        Text(attributed)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .textSelection(.enabled)
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(documentPaperColor(for: attributed), in: RoundedRectangle(cornerRadius: 8))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(.quaternary)
+            )
+    }
+
+    /// Card fill for rich-text preview: dominant run background when it covers most
+    /// of the string (document paper), otherwise the system text-background color.
+    private func documentPaperColor(for attributed: AttributedString) -> Color {
+        #if os(macOS)
+        let ns = NSAttributedString(attributed)
+        let fullLength = max(ns.length, 1)
+        var best: (color: NSColor, length: Int)?
+
+        ns.enumerateAttribute(
+            .backgroundColor,
+            in: NSRange(location: 0, length: ns.length)
+        ) { value, range, _ in
+            guard let color = value as? NSColor else { return }
+            if best == nil || range.length > best!.length {
+                best = (color, range.length)
+            }
+        }
+
+        // Only promote a run background to "paper" when it covers most of the text;
+        // short highlight backgrounds (yellow, etc.) must not become the card fill.
+        if let best, Double(best.length) / Double(fullLength) >= 0.5 {
+            return Color(nsColor: best.color)
+        }
+        return Color(nsColor: .textBackgroundColor)
+        #else
+        let ns = NSAttributedString(attributed)
+        let fullLength = max(ns.length, 1)
+        var best: (color: UIColor, length: Int)?
+
+        ns.enumerateAttribute(
+            .backgroundColor,
+            in: NSRange(location: 0, length: ns.length)
+        ) { value, range, _ in
+            guard let color = value as? UIColor else { return }
+            if best == nil || range.length > best!.length {
+                best = (color, range.length)
+            }
+        }
+
+        if let best, Double(best.length) / Double(fullLength) >= 0.5 {
+            return Color(uiColor: best.color)
+        }
+        return Color(uiColor: .systemBackground)
+        #endif
     }
 
     @ViewBuilder

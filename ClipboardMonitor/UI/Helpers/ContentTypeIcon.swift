@@ -16,6 +16,7 @@ enum ContentTypeIcon {
         case .image: return "photo"
         case .url: return "link"
         case .plainText: return "doc.plaintext"
+        case .richText: return "doc.richtext"
         case .color: return "paintpalette"
         case .unknown: return "questionmark.square"
         }

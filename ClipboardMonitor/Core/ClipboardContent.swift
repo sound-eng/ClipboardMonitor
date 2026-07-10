@@ -16,6 +16,7 @@ enum ClipboardContent {
     case url(raw: String, parsed: URL?)
     case image(Data)
     case plainText(String, String.Encoding)
+    case richText(AttributedString)
     case color(Data)
 
     /// Everything that doesn't fall into any known category above.
@@ -29,6 +30,7 @@ extension ClipboardContent: CustomDebugStringConvertible {
         case .url: "URL"
         case .image: "Image"
         case .plainText: "Plain text"
+        case .richText: "Rich text"
         case .color: "Color"
         case .unknown(let representation):
             Self.humanizedTypeName(representation.rawType)
@@ -46,6 +48,8 @@ extension ClipboardContent: CustomDebugStringConvertible {
             return "Image (\(data.count) bytes)"
         case .plainText(let text, let encoding):
             return "Plain Text: \(text) (Encoding: \(encoding))"
+        case .richText(let attributedString):
+            return "Rich text: \(attributedString)"
         case .color(let data):
             return "Color (\(data.count) bytes)"
         case .unknown(let rawRepresentation):

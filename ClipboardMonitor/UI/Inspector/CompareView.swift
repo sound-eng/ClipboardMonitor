@@ -98,6 +98,7 @@ struct CompareView: View {
         let content = classifier.classify(representation)
         switch content {
         case .plainText(let text, _): return text
+        case .richText(let attributed): return String(attributed.characters)
         case .url(let raw, _): return raw
         case .image, .color: return nil
         case .unknown: return RepresentationDecoding.text(from: representation)

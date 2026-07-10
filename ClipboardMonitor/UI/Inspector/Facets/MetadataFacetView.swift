@@ -55,6 +55,8 @@ struct MetadataFacetView: View {
             return imageRows(data)
         case .plainText(let text, let encoding):
             return plainTextRows(text, encoding: encoding)
+        case .richText(let attributed):
+            return richTextRows(attributed)
         case .color:
             return colorRows
         case .unknown:
@@ -127,6 +129,16 @@ struct MetadataFacetView: View {
             Row(id: "chars", key: "Characters", value: "\(text.count)"),
             Row(id: "lines", key: "Lines", value: "\(lines)"),
             Row(id: "encoding", key: "Encoding", value: encodingName(encoding))
+        ]
+    }
+
+    private func richTextRows(_ attributed: AttributedString) -> [Row] {
+        let plain = String(attributed.characters)
+        let lines = plain.components(separatedBy: .newlines).count
+        return [
+            Row(id: "chars", key: "Characters", value: "\(plain.count)"),
+            Row(id: "lines", key: "Lines", value: "\(lines)"),
+            Row(id: "runs", key: "Attribute runs", value: "\(attributed.runs.count)")
         ]
     }
 

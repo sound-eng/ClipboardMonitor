@@ -92,6 +92,7 @@ final class ClipboardContentDisplayTitleTests: XCTestCase {
         XCTAssertEqual(ClipboardContent.url(raw: "https://a.com", parsed: nil).displayTitle, "URL")
         XCTAssertEqual(ClipboardContent.image(Data()).displayTitle, "Image")
         XCTAssertEqual(ClipboardContent.plainText("x", .utf8).displayTitle, "Plain text")
+        XCTAssertEqual(ClipboardContent.richText(AttributedString("x")).displayTitle, "Rich text")
         XCTAssertEqual(ClipboardContent.color(Data()).displayTitle, "Color")
     }
 
