@@ -6,14 +6,15 @@ Developer-oriented clipboard inspector for Apple platforms. It watches the paste
 
 ## What it does
 
-- Polls the system pasteboard and records changes automatically
+- Watches the pasteboard and records each change as a snapshot (macOS: poll or on-foreground; iOS: on-foreground)
 - Classifies representations (plain text, rich text, HTML, URL, image, color, and unknowns)
 - Shows an inspector UI:
   - **History** - recent snapshots with readable titles
   - **Inspector** - overview (with inline preview), source, metadata, hex, and compare
   - **Representations** - all UTTypes in the selected snapshot (primary first), under the inspector
 - **Follow Latest** keeps the inspector on the newest copy, with a badge when you drift behind
-- Persists up to 100 snapshots with SwiftData (oldest entries are evicted)
+- Preferences for history size, hex display limit, and (macOS) monitoring mode
+- Persists snapshots with SwiftData (rolling cap; default 100)
 
 ## Requirements
 
