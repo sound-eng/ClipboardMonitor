@@ -26,9 +26,11 @@ struct URLClipboardInspector: ClipboardInspector {
     var supportedTypes: Set<UTType> = [.url, .fileURL]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
+        // Preserve URL-typed pasteboard payloads even when Foundation cannot parse them
+        // into a "real" URL — the monitor should still surface the declared type + raw text.
         guard let string = String(data: representation.data, encoding: .utf8),
-              let url = URL(string: string) else { return nil }
-        return .url(url)
+              string.isEmpty == false else { return nil }
+        return .url(raw: string, parsed: URL(string: string))
     }
 }
 /// Plain text type inspector

@@ -10,7 +10,10 @@ import Foundation
 /// Carries the contents data so we can parse the appropriate content item (Image, text, color) later.
 ///
 enum ClipboardContent {
-    case url(URL)
+    /// URL-typed pasteboard payload.
+    /// - `raw`: the exact UTF-8 string from the pasteboard (display fidelity).
+    /// - `parsed`: Foundation's parse of that string, when it succeeds.
+    case url(raw: String, parsed: URL?)
     case image(Data)
     case plainText(String, String.Encoding)
     case color(Data)
@@ -22,8 +25,11 @@ enum ClipboardContent {
 extension ClipboardContent: CustomDebugStringConvertible {
     var debugDescription: String {
         switch self {
-        case .url(let url):
-            return "URL: \(url)"
+        case .url(let raw, let parsed):
+            if let parsed, parsed.absoluteString != raw {
+                return "URL: \(raw) (parsed: \(parsed.absoluteString))"
+            }
+            return "URL: \(raw)"
         case .image(let data):
             return "Image (\(data.count) bytes)"
         case .plainText(let text, let encoding):
