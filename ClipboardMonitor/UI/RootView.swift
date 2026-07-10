@@ -17,6 +17,8 @@ struct RootView: View {
     @State private var selectedSnapshotID: PasteboardSnapshot.ID?
     @State private var selectedRepresentationID: RawRepresentation.ID?
     @State private var isComparing = false
+    /// When true, the inspector tracks the newest snapshot as copies arrive.
+    @State private var followLatest = true
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -41,6 +43,27 @@ struct RootView: View {
         guard let snapshot = selectedSnapshot else { return nil }
         let ordered = classifier.orderedRepresentations(snapshot.representations)
         return ordered.first { $0.id == selectedRepresentationID } ?? ordered.first
+    }
+
+    private var latestSnapshotID: PasteboardSnapshot.ID? {
+        repository.snapshots.first?.id
+    }
+
+    private var isShowingLatest: Bool {
+        selectedSnapshotID == latestSnapshotID
+    }
+
+    /// True when the inspector is pinned to an older snapshot than the newest history entry.
+    private var isStale: Bool {
+        latestSnapshotID != nil && !isShowingLatest
+    }
+
+    /// How many history entries are newer than the current selection (newest-first list).
+    private var unseenCount: Int {
+        guard let selectedSnapshotID,
+              let index = repository.snapshots.firstIndex(where: { $0.id == selectedSnapshotID })
+        else { return 0 }
+        return index
     }
 
     var body: some View {
@@ -79,7 +102,6 @@ struct RootView: View {
                     classifier: classifier
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-//                .navigationTitle(showPreferences ? "Preferences" : "Inspector")
 
                 Divider()
 
@@ -90,7 +112,10 @@ struct RootView: View {
                 )
                 .frame(minHeight: 140, idealHeight: 200, maxHeight: 280)
             }
-            .toolbar { compareToolbarItem }
+            .toolbar {
+                followLatestToolbarItem
+                compareToolbarItem
+            }
         }
         .sheet(isPresented: $isComparing) {
             if let snapshot = selectedSnapshot {
@@ -106,7 +131,7 @@ struct RootView: View {
             controller.captureSnapshot()
             applyMonitoringConfiguration()
             if selectedSnapshotID == nil {
-                selectedSnapshotID = repository.snapshots.first?.id
+                selectedSnapshotID = latestSnapshotID
             }
             selectPrimaryRepresentationIfNeeded()
         }
@@ -114,12 +139,17 @@ struct RootView: View {
             controller.stop()
         }
         .onChange(of: repository.snapshots.map(\.id)) { _, newIDs in
-            if selectedSnapshotID == nil || selectedSnapshotID.map({ !newIDs.contains($0) }) == true {
-                selectedSnapshotID = repository.snapshots.first?.id
+            let selectionMissing = selectedSnapshotID == nil
+                || selectedSnapshotID.map { !newIDs.contains($0) } == true
+            if followLatest || selectionMissing {
+                selectedSnapshotID = latestSnapshotID
             }
         }
-        .onChange(of: selectedSnapshotID) { _, _ in
+        .onChange(of: selectedSnapshotID) { _, newID in
             selectPrimaryRepresentation()
+            if newID != latestSnapshotID {
+                followLatest = false
+            }
         }
         .onChange(of: preferences.maxSnapshots) { _, newValue in
             repository.maxCount = newValue
@@ -161,6 +191,19 @@ struct RootView: View {
     }
 
     @ToolbarContentBuilder
+    private var followLatestToolbarItem: some ToolbarContent {
+        if !showPreferences, isStale {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: followLatestSnapshot) {
+                    Label("Follow Latest", systemImage: "arrow.down.to.line")
+                }
+                .help("Show the latest clipboard snapshot and keep following new copies")
+                .badge(unseenCount)
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
     private var compareToolbarItem: some ToolbarContent {
         if canCompare {
             ToolbarItem(placement: .primaryAction) {
@@ -185,6 +228,11 @@ struct RootView: View {
     }
 
     // MARK: - Selection
+
+    private func followLatestSnapshot() {
+        followLatest = true
+        selectedSnapshotID = latestSnapshotID
+    }
 
     /// Prefer the highest-priority inspectable representation when a snapshot is selected.
     private func selectPrimaryRepresentation() {

@@ -2,16 +2,17 @@
 
 Developer-oriented clipboard inspector for Apple platforms. It watches the pasteboard, captures each change as a snapshot, and lets you inspect every representation the system exposes — not just the “obvious” text or image.
 
-**Current release: 0.3.0**
+**Current release: 0.4.0**
 
 ## What it does
 
 - Polls the system pasteboard and records changes automatically
 - Classifies representations (plain text, rich text, HTML, URL, image, color, and unknowns)
-- Shows a three-pane inspector UI:
+- Shows an inspector UI:
   - **History** - recent snapshots with readable titles
-  - **Representations** - all UTTypes in the selected snapshot (primary first)
   - **Inspector** - overview (with inline preview), source, metadata, hex, and compare
+  - **Representations** - all UTTypes in the selected snapshot (primary first), under the inspector
+- **Follow Latest** keeps the inspector on the newest copy, with a badge when you drift behind
 - Persists up to 100 snapshots with SwiftData (oldest entries are evicted)
 
 ## Requirements
@@ -40,7 +41,7 @@ xcodebuild -scheme ClipboardMonitor -destination 'platform=macOS' test
 ClipboardMonitor/
 ├── Core/          # Pure domain: snapshots, classifiers, inspectors, repository protocol
 ├── Infra/         # Platform + persistence: pasteboard I/O, SwiftData models
-└── UI/            # SwiftUI 3-pane inspector
+└── UI/            # SwiftUI inspector chrome
 ```
 
 - **Core** stays free of AppKit/UIKit/SwiftData

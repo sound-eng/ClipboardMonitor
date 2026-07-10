@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-07-10
+
+### Added
+
+- **Follow Latest** toolbar control with a badge when the inspector is behind the newest history entry; resumes auto-tracking new copies
+- Standard macOS **Preferences…** menu item (⌘,) that opens the in-window preferences pane
+- iOS / iPadOS preferences via sheet; gear control lives on the History sidebar so it stays reachable in split view
+
+### Changed
+
+- Inspector chrome is now History + detail with representations stacked under the inspector (middle-column layout option removed)
+
+### Fixed
+
+- Skip capturing a duplicate snapshot on launch / foreground when the pasteboard content is unchanged
+- History list scrolls the latest row fully into view while following new copies
+- Compare is hidden when unavailable or while Preferences is open
+- Preferences were unreachable on iPadOS because the toolbar sat on the outer split-view wrapper
+
 ## [0.3.0] - 2026-07-10
 
 ### Added
