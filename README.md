@@ -9,9 +9,9 @@ Developer-oriented clipboard inspector for Apple platforms. It watches the paste
 - Polls the system pasteboard and records changes automatically
 - Classifies representations (plain text, rich text, URL, image, color, and unknowns)
 - Shows a three-pane inspector UI:
-  - **History** — recent snapshots with readable titles
-  - **Representations** — all UTTypes in the selected snapshot (primary first)
-  - **Inspector** — overview (with inline preview), source, metadata, hex, and compare
+  - **History** - recent snapshots with readable titles
+  - **Representations** - all UTTypes in the selected snapshot (primary first)
+  - **Inspector** - overview (with inline preview), source, metadata, hex, and compare
 - Persists up to 100 snapshots with SwiftData (oldest entries are evicted)
 
 ## Requirements
@@ -24,7 +24,7 @@ Developer-oriented clipboard inspector for Apple platforms. It watches the paste
 1. Open `ClipboardMonitor.xcodeproj` in Xcode
 2. Select the **ClipboardMonitor** scheme
 3. Run on **My Mac**
-4. Copy something — a new snapshot should appear in History
+4. Copy something - a new snapshot should appear in History
 
 ```bash
 # Build

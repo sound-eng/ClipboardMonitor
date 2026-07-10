@@ -9,6 +9,9 @@ import AppKit
 import UIKit
 #endif
 
+/// The only task of this class is to monitor wether pasteboard's state changes, via changeCount property.
+/// It then fires event for other components to proceed.
+
 @MainActor
 final class ClipboardMonitor: ClipboardMonitoring {
     private let pasteboard: PlatformPasteboard
@@ -19,9 +22,13 @@ final class ClipboardMonitor: ClipboardMonitoring {
         self.pollingInterval = pollingInterval
     }
 
+    /// Asynchronous stream of events fired when Pasteboard state changes
+    /// New event is emitted when pasteboard changeCount updates.
+    ///
     var events: AsyncStream<ClipboardEvent> {
         AsyncStream { continuation in
-            var last = pasteboard.changeCount
+            // We want to capture the initial pasteboard state too. To exclude it, use 'var last = pasteboard.changeCount':
+            var last = 0
 
             let task = Task {
                 while !Task.isCancelled {

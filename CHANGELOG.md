@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] — 2026-07-10
+## [0.2.0] - 2026-07-10
 
 ### Added
 
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `public.utf16-external-plain-text` decoding: honor BOM and sniff endianness so LE pasteboard data no longer renders as CJK garbage
 
-## [0.1.0] — 2026-07-10
+## [0.1.0] - 2026-07-10
 
 First MVP release: a usable inspector UI on top of the existing clipboard monitoring core.
 
