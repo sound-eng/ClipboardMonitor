@@ -23,6 +23,18 @@ enum ClipboardContent {
 }
 
 extension ClipboardContent: CustomDebugStringConvertible {
+    /// Short user-facing title for lists (sidebar, etc.).
+    var displayTitle: String {
+        switch self {
+        case .url: "URL"
+        case .image: "Image"
+        case .plainText: "Plain text"
+        case .color: "Color"
+        case .unknown(let representation):
+            Self.humanizedTypeName(representation.rawType)
+        }
+    }
+
     var debugDescription: String {
         switch self {
         case .url(let raw, let parsed):
@@ -39,5 +51,16 @@ extension ClipboardContent: CustomDebugStringConvertible {
         case .unknown(let rawRepresentation):
             return "Unknown: \(rawRepresentation)"
         }
+    }
+
+    /// Turn a UTI like `public.html` / `com.apple.flat-rtf` into a short label.
+    private static func humanizedTypeName(_ rawType: String) -> String {
+        let leaf = rawType.split(separator: ".").last.map(String.init) ?? rawType
+        guard !leaf.isEmpty else { return "Unknown" }
+        // Keep short acronyms (rtf, html, pdf) uppercase; otherwise capitalize.
+        if leaf.count <= 4, leaf.allSatisfy(\.isLetter) {
+            return leaf.uppercased()
+        }
+        return leaf.replacingOccurrences(of: "-", with: " ").capitalized
     }
 }

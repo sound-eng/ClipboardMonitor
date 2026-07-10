@@ -84,6 +84,30 @@ final class ClipboardContentDebugDescriptionTests: XCTestCase {
     }
 }
 
+// MARK: - ClipboardContent Display Title Tests
+
+final class ClipboardContentDisplayTitleTests: XCTestCase {
+
+    func test_displayTitle_knownTypes() {
+        XCTAssertEqual(ClipboardContent.url(raw: "https://a.com", parsed: nil).displayTitle, "URL")
+        XCTAssertEqual(ClipboardContent.image(Data()).displayTitle, "Image")
+        XCTAssertEqual(ClipboardContent.plainText("x", .utf8).displayTitle, "Plain text")
+        XCTAssertEqual(ClipboardContent.color(Data()).displayTitle, "Color")
+    }
+
+    func test_displayTitle_unknown_humanizesUTI() {
+        let html = ClipboardContent.unknown(
+            TestFixtures.unknownRepresentation(rawType: "public.html")
+        )
+        XCTAssertEqual(html.displayTitle, "HTML")
+
+        let rtf = ClipboardContent.unknown(
+            TestFixtures.unknownRepresentation(rawType: "com.apple.flat-rtf")
+        )
+        XCTAssertEqual(rtf.displayTitle, "Flat Rtf")
+    }
+}
+
 // MARK: - UTType+Raw Tests
 
 final class UTTypeRawTests: XCTestCase {

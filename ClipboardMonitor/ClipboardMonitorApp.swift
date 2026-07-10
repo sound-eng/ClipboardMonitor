@@ -8,22 +8,31 @@ import SwiftData
 
 @main
 struct ClipboardMonitorApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+    private let sharedModelContainer: ModelContainer
+    @State private var repository: SwiftDataSnapshotRepository
 
+    init() {
+        let schema = Schema([
+            PersistedSnapshot.self,
+            PersistedRepresentation.self
+        ])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            sharedModelContainer = container
+            // Create the repository once with the container's main context so the
+            // same instance is observed by RootView for the app lifetime.
+            _repository = State(
+                initialValue: SwiftDataSnapshotRepository(modelContext: container.mainContext)
+            )
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView(repository: repository)
         }
         .modelContainer(sharedModelContainer)
     }

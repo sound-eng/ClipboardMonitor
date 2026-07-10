@@ -20,6 +20,7 @@ Icon\r\r
 # Xcode user state and build results
 build/
 DerivedData/
+.derivedData/
 *.hmap
 *.ipa
 *.dSYM.zip

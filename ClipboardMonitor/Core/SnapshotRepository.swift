@@ -3,11 +3,17 @@
 //  ClipboardMonitor
 //
 
-@MainActor
-class SnapshotRepository {
-    var snapshots: [PasteboardSnapshot] = []
+import Foundation
 
-    func add(_ snapshot: PasteboardSnapshot) {
-        snapshots.append(snapshot)
-    }
+/// Ordered history of clipboard snapshots.
+///
+/// Implementations may be in-memory (previews/tests) or SwiftData-backed (production).
+/// Marked `@MainActor` because UI and `ClipboardController` both touch this on the main thread.
+@MainActor
+protocol SnapshotRepositoryProtocol: AnyObject {
+    /// Snapshots newest-first.
+    var snapshots: [PasteboardSnapshot] { get }
+
+    /// Persists a snapshot and enforces any retention policy.
+    func add(_ snapshot: PasteboardSnapshot)
 }

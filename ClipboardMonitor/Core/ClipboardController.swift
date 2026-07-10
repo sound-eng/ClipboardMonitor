@@ -5,50 +5,55 @@
 
 import Foundation
 
-/// Controller that assembles together the clipboard monitor core service
+/// Wires monitor → reader → repository. Owns the monitoring task lifecycle.
 ///
 @MainActor
 final class ClipboardController {
-    private let monitor = ClipboardMonitor()
-    private let reader = ClipboardReader()
-    private let repository = SnapshotRepository()
-    private let classifier = ClipboardClassifier.default
+    private let monitor: ClipboardMonitoring
+    private let reader: ClipboardReading
+    private let repository: any SnapshotRepositoryProtocol
+    private let classifier: ClipboardClassifier
     private var task: Task<Void, Never>?
 
-    /// Starts periodic clipboard monitoring
-    ///
+    init(
+        repository: any SnapshotRepositoryProtocol,
+        monitor: (any ClipboardMonitoring)? = nil,
+        reader: (any ClipboardReading)? = nil,
+        classifier: ClipboardClassifier? = nil
+    ) {
+        self.repository = repository
+        // Defaults constructed in the body so MainActor isolation is satisfied
+        // (default argument expressions are evaluated in a nonisolated context).
+        self.monitor = monitor ?? ClipboardMonitor()
+        self.reader = reader ?? ClipboardReader()
+        self.classifier = classifier ?? .default
+    }
+
+    /// Starts listening for pasteboard change events.
     func start() {
         task?.cancel()
         task = Task {
             for await event in monitor.events {
                 switch event {
                 case .changed:
-                    self.makeSnapshot()
+                    self.captureSnapshot()
                 }
             }
         }
     }
 
-    /// Fetches single snapshot of the Pasteboard state, classifies the contents and invokes all necessary logic (I know, a bit god - like)
-    /// 
-    func makeSnapshot() {
+    /// Reads the current pasteboard, stores a snapshot, and classifies for side-effect logging.
+    func captureSnapshot() {
         let snapshot = reader.readSnapshot()
+        // Skip empty pasteboards — common right after launch or clear.
+        guard !snapshot.representations.isEmpty else { return }
         repository.add(snapshot)
-
-        let contents = snapshot.items.map(classifier.classify)
-
-        print("\n>> Classification:")
-
-        contents.forEach { contentsArray in
-            contentsArray.forEach { content in
-                print(" * \(content)")
-            }
-        }
+        _ = snapshot.items.map(classifier.classify)
     }
 
-    /// Stops periodic clipboard monitoring
-    ///
+    /// Stops listening for pasteboard changes.
     func stop() {
         task?.cancel()
+        task = nil
     }
 }

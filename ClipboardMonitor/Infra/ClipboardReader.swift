@@ -1,5 +1,5 @@
 //
-//  ClipboardMonitor.swift
+//  ClipboardReader.swift
 //  ClipboardMonitor
 //
 
@@ -32,9 +32,9 @@ final class ClipboardReader: ClipboardReading {
                     representations: item.types.compactMap { type -> RawRepresentation? in
                         guard let data = item.data(forType: type) else { return nil }
                         let rawType = type.rawValue
-                        // Using UTType(importedAs:) because we want clipboard items from all the applications, and this causes console to log messages like:
-                        // "Type "org.chromium.source-url" was expected to be declared and imported in the Info.plist of ClipboardMonitor.app, but it was not found.",
-                        // because this type is reserved for someone else (Chromium/Slack in this case), so we ignore the message.
+                        // UTType(importedAs:) accepts third-party types (Chromium, Slack, …)
+                        // that are not declared in our Info.plist; the system may log a warning
+                        // we intentionally ignore.
                         let resolvedType = UTType(rawType) ?? UTType(importedAs: rawType)
                         return RawRepresentation(rawType: rawType, type: resolvedType, data: data)
                     }

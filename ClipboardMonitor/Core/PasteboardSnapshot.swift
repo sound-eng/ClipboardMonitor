@@ -6,22 +6,44 @@
 import Foundation
 import UniformTypeIdentifiers
 
-/// Keeps snapshot of platform pasteboard state for further processing
+/// Snapshot of pasteboard state at a point in time.
 ///
-struct PasteboardSnapshot {
+struct PasteboardSnapshot: Identifiable, Hashable {
+    let id: UUID
+    let capturedAt: Date
     let items: [RawPasteboardItem]
+
+    init(id: UUID = UUID(), capturedAt: Date = Date(), items: [RawPasteboardItem]) {
+        self.id = id
+        self.capturedAt = capturedAt
+        self.items = items
+    }
+
+    /// All representations across every pasteboard item, flattened.
+    /// The inspector UI works on this flat list (see implementation plan).
+    var representations: [RawRepresentation] {
+        items.flatMap(\.representations)
+    }
 }
 
-/// Single pasteboard item with all available representations
+/// Single pasteboard item with all available representations.
 ///
-struct RawPasteboardItem {
+struct RawPasteboardItem: Hashable {
     let representations: [RawRepresentation]
 }
 
-/// Single data type representation available for classification and parsing to a concrete type (Image, String, URL, e t.c.)
+/// Single data-type representation available for classification.
 ///
-struct RawRepresentation {
-    // We want to use UTType whenever we can, sometimes wall we have is a raw type identifier. So we keep both for now.
+struct RawRepresentation: Identifiable, Hashable {
+    /// Stable within a snapshot; identical copies share an id, which is fine for list selection.
+    var id: Int {
+        var hasher = Hasher()
+        hasher.combine(rawType)
+        hasher.combine(data)
+        return hasher.finalize()
+    }
+
+    /// We prefer `UTType` when resolvable; some pasteboard types only exist as raw identifiers.
     let rawType: String
     let type: UTType?
     let data: Data
@@ -29,6 +51,6 @@ struct RawRepresentation {
 
 extension RawRepresentation: CustomDebugStringConvertible {
     var debugDescription: String {
-        return "Raw type = \(self.rawType), type = \(self.type ?? UTType(importedAs: "com.wearedevx.ClipboardMonitor.unknown")), data.count = \(self.data.count)"
+        "Raw type = \(rawType), type = \(type?.identifier ?? "nil"), data.count = \(data.count)"
     }
 }
