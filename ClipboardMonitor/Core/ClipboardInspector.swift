@@ -36,35 +36,13 @@ extension ClipboardInspector {
     }
 }
 
-// MARK: - URL
-
-/// URL type inspector.
-///
-struct URLClipboardInspector: ClipboardInspector {
-    let displayName = "URL Inspector"
-    let priority: Int = 0
-    var supportedTypes: Set<UTType> = [.url, .fileURL]
-
-    func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
-        // Keep URL-typed payloads even when Foundation cannot parse them —
-        // the monitor should still surface the declared type + raw text.
-        guard let string = String(data: representation.data, encoding: .utf8),
-              string.isEmpty == false else { return nil }
-        return .url(raw: string, parsed: URL(string: string))
-    }
-
-    func supportedFacets(for representation: RawRepresentation) -> [InspectorFacet] {
-        [.overview, .metadata, .hex]
-    }
-}
-
 // MARK: - Plain text
 
 /// Plain text type inspector.
 ///
 struct PlainTextInspector: ClipboardInspector {
     let displayName = "Plain Text Inspector"
-    let priority: Int = 1
+    let priority: Int = 0
     var supportedTypes: Set<UTType> = [.plainText, .utf8PlainText, .utf16PlainText, .utf16ExternalPlainText]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
@@ -144,6 +122,28 @@ struct PlainTextInspector: ClipboardInspector {
         if oddZeros > evenZeros * 2 { return .utf16LittleEndian }
         if evenZeros > oddZeros * 2 { return .utf16BigEndian }
         return nil
+    }
+}
+
+// MARK: - URL
+
+/// URL type inspector.
+///
+struct URLClipboardInspector: ClipboardInspector {
+    let displayName = "URL Inspector"
+    let priority: Int = 1
+    var supportedTypes: Set<UTType> = [.url, .fileURL]
+
+    func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
+        // Keep URL-typed payloads even when Foundation cannot parse them —
+        // the monitor should still surface the declared type + raw text.
+        guard let string = String(data: representation.data, encoding: .utf8),
+              string.isEmpty == false else { return nil }
+        return .url(raw: string, parsed: URL(string: string))
+    }
+
+    func supportedFacets(for representation: RawRepresentation) -> [InspectorFacet] {
+        [.overview, .metadata, .hex]
     }
 }
 

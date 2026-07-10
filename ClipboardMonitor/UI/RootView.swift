@@ -99,7 +99,8 @@ struct RootView: View {
             VStack(spacing: 0) {
                 InspectorDetailView(
                     representation: selectedRepresentation,
-                    classifier: classifier
+                    classifier: classifier,
+                    source: selectedSnapshot?.source
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 

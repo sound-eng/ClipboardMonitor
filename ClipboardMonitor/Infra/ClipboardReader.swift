@@ -39,7 +39,8 @@ final class ClipboardReader: ClipboardReading {
                         return RawRepresentation(rawType: rawType, type: resolvedType, data: data)
                     }
                 )
-            }
+            },
+            source: resolveSource()
         )
         #else
         let items = pasteboard.items
@@ -62,10 +63,40 @@ final class ClipboardReader: ClipboardReading {
                         return RawRepresentation(rawType: rawType, type: resolvedType, data: data)
                     }
                 )
-            }
+            },
+            source: nil
         )
         #endif
     }
+
+    #if os(macOS)
+    /// Prefer `org.nspasteboard.source`; otherwise infer from the frontmost app.
+    private func resolveSource() -> PasteboardSource {
+        let sourceType = NSPasteboard.PasteboardType("org.nspasteboard.source")
+        if let declared = pasteboard.string(forType: sourceType) {
+            if declared.isEmpty {
+                return PasteboardSource(
+                    bundleIdentifier: nil,
+                    displayName: nil,
+                    attribution: .unknown
+                )
+            }
+            let running = NSRunningApplication.runningApplications(withBundleIdentifier: declared).first
+            return PasteboardSource(
+                bundleIdentifier: declared,
+                displayName: running?.localizedName ?? declared,
+                attribution: .declared
+            )
+        }
+
+        let frontmost = NSWorkspace.shared.frontmostApplication
+        return PasteboardSource(
+            bundleIdentifier: frontmost?.bundleIdentifier,
+            displayName: frontmost?.localizedName,
+            attribution: .frontmost
+        )
+    }
+    #endif
 }
 
 @MainActor

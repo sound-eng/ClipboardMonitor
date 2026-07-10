@@ -9,6 +9,7 @@ import SwiftUI
 struct InspectorDetailView: View {
     let representation: RawRepresentation?
     let classifier: ClipboardClassifier
+    var source: PasteboardSource? = nil
 
     /// Owned here so parent selection churn cannot clobber the active tab mid-click.
     @State private var selectedFacet: InspectorFacet = .overview
@@ -98,7 +99,12 @@ struct InspectorDetailView: View {
 
         switch selectedFacet {
         case .overview:
-            OverviewFacetView(representation: representation, content: content, inspectorName: inspector?.displayName)
+            OverviewFacetView(
+                representation: representation,
+                content: content,
+                inspectorName: inspector?.displayName,
+                source: source
+            )
         case .source:
             SourceFacetView(representation: representation, content: content)
         case .metadata:

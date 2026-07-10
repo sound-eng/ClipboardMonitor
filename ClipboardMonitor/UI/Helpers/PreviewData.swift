@@ -22,11 +22,21 @@ enum PreviewData {
         return [
             PasteboardSnapshot(
                 capturedAt: Date().addingTimeInterval(-12),
-                items: [RawPasteboardItem(representations: [text, url])]
+                items: [RawPasteboardItem(representations: [text, url])],
+                source: PasteboardSource(
+                    bundleIdentifier: "com.apple.Safari",
+                    displayName: "Safari",
+                    attribution: .declared
+                )
             ),
             PasteboardSnapshot(
                 capturedAt: Date().addingTimeInterval(-120),
-                items: [RawPasteboardItem(representations: [url])]
+                items: [RawPasteboardItem(representations: [url])],
+                source: PasteboardSource(
+                    bundleIdentifier: "com.apple.dt.Xcode",
+                    displayName: "Xcode",
+                    attribution: .frontmost
+                )
             )
         ]
     }
