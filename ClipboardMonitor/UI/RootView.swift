@@ -19,6 +19,10 @@ struct RootView: View {
     @State private var isComparing = false
     /// When true, the inspector tracks the newest snapshot as copies arrive.
     @State private var followLatest = true
+    #if os(iOS)
+    @State private var showPasteAccessOnboarding = false
+    @Environment(\.openURL) private var openURL
+    #endif
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -71,6 +75,16 @@ struct RootView: View {
         inspectorChrome
             .sheet(isPresented: $showPreferences) {
                 PreferencesView(preferences: preferences, isPresented: $showPreferences)
+            }
+            .sheet(isPresented: $showPasteAccessOnboarding) {
+                PasteAccessOnboardingView(
+                    onOpenSettings: {
+                        completePasteAccessOnboarding(openSettings: true)
+                    },
+                    onContinue: {
+                        completePasteAccessOnboarding(openSettings: false)
+                    }
+                )
             }
             .environment(preferences)
         #else
@@ -129,8 +143,15 @@ struct RootView: View {
         }
         .onAppear {
             repository.maxCount = preferences.maxSnapshots
-            controller.captureSnapshot()
-            applyMonitoringConfiguration()
+            #if os(iOS)
+            if preferences.hasCompletedPasteAccessOnboarding {
+                startMonitoringAndCapture()
+            } else {
+                showPasteAccessOnboarding = true
+            }
+            #else
+            startMonitoringAndCapture()
+            #endif
             if selectedSnapshotID == nil {
                 selectedSnapshotID = latestSnapshotID
             }
@@ -163,6 +184,9 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active, preferences.monitorMode == .foreground else { return }
+            #if os(iOS)
+            guard preferences.hasCompletedPasteAccessOnboarding else { return }
+            #endif
             controller.captureSnapshot()
         }
     }
@@ -177,7 +201,7 @@ struct RootView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    showPreferences = true
+                    showPreferences.toggle()
                 } label: {
                     Label("Preferences", systemImage: "gearshape")
                 }
@@ -196,10 +220,30 @@ struct RootView: View {
         if !showPreferences, isStale {
             ToolbarItem(placement: .primaryAction) {
                 Button(action: followLatestSnapshot) {
+                    #if os(macOS)
+                    // NSToolbar ignores View.badge; show the count inline so it isn't clipped.
+                    Label {
+                        Text("Follow Latest")
+                    } icon: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.down.to.line")
+                            Text(unseenCount, format: .number.notation(.compactName))
+                                .font(.caption2.weight(.bold))
+                                .monospacedDigit()
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(.red, in: Capsule())
+                        }
+                    }
+                    #else
                     Label("Follow Latest", systemImage: "arrow.down.to.line")
+                    #endif
                 }
                 .help("Show the latest clipboard snapshot and keep following new copies")
+                #if os(iOS)
                 .badge(unseenCount)
+                #endif
             }
         }
     }
@@ -215,6 +259,11 @@ struct RootView: View {
 
     // MARK: - Monitoring
 
+    private func startMonitoringAndCapture() {
+        controller.captureSnapshot()
+        applyMonitoringConfiguration()
+    }
+
     private func applyMonitoringConfiguration() {
         controller.stop()
         switch preferences.monitorMode {
@@ -227,6 +276,20 @@ struct RootView: View {
             controller.captureSnapshot()
         }
     }
+
+    #if os(iOS)
+    private func completePasteAccessOnboarding(openSettings: Bool) {
+        preferences.hasCompletedPasteAccessOnboarding = true
+        showPasteAccessOnboarding = false
+        if openSettings {
+            // Capture when the user returns (scenePhase → active), so Settings
+            // isn’t covered by the system paste prompt.
+            openURL(PasteAccessSettings.url)
+        } else {
+            startMonitoringAndCapture()
+        }
+    }
+    #endif
 
     // MARK: - Selection
 

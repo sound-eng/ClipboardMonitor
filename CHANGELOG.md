@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-07-10
+
+### Added
+
+- iOS first-launch paste-access guidance with a direct link to Settings → Paste from Other Apps
+- Preferences link on iOS to reopen Paste Settings anytime
+
+### Changed
+
+- Inspector facet tabs (Overview, Metadata, Source, …) collapse to icons when the strip is too narrow for labels
+- iOS deployment target lowered to 18.6; app categorized as Utilities
+
+### Fixed
+
+- Follow Latest unseen-count badge now appears on macOS (NSToolbar ignores SwiftUI `.badge`)
+
 ## [0.5.0] - 2026-07-10
 
 ### Added

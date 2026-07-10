@@ -16,6 +16,9 @@ struct PreferencesView: View {
                 historySection
                 hexSection
                 monitoringSection
+                #if os(iOS)
+                pasteAccessSection
+                #endif
             }
             .formStyle(.grouped)
             .navigationTitle("Preferences")
@@ -116,6 +119,22 @@ struct PreferencesView: View {
             #endif
         }
     }
+
+    #if os(iOS)
+    private var pasteAccessSection: some View {
+        Section {
+            Link(destination: PasteAccessSettings.url) {
+                Label("Open Paste Settings", systemImage: "gear")
+            }
+        } header: {
+            Label("Paste Access", systemImage: "doc.on.clipboard")
+        } footer: {
+            Text(
+                "Set Paste from Other Apps to Allow so ClipboardMonitor can capture without asking every time. If that option is missing, allow the system paste prompt once, then return here."
+            )
+        }
+    }
+    #endif
 
     private var monitoringFooter: String {
         switch preferences.monitorMode {

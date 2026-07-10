@@ -2,7 +2,7 @@
 
 Developer-oriented clipboard inspector for Apple platforms. It watches the pasteboard, captures each change as a snapshot, and lets you inspect every representation the system exposes — not just the “obvious” text or image.
 
-**Current release: 0.5.0**
+**Current release: 0.6.0**
 
 ## What it does
 

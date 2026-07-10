@@ -36,6 +36,7 @@ final class AppPreferences {
         static let maxHexDisplayBytes = "preferences.maxHexDisplayBytes"
         static let monitorMode = "preferences.monitorMode"
         static let pollIntervalMilliseconds = "preferences.pollIntervalMilliseconds"
+        static let hasCompletedPasteAccessOnboarding = "preferences.hasCompletedPasteAccessOnboarding"
     }
 
     /// Rolling history cap. Oldest snapshots are evicted when exceeded.
@@ -62,6 +63,12 @@ final class AppPreferences {
         .milliseconds(pollIntervalMilliseconds)
     }
 
+    /// iOS-only: first-launch paste-access guidance has been acknowledged.
+    /// Unused on macOS; kept in the shared model so preferences stay one type.
+    var hasCompletedPasteAccessOnboarding: Bool {
+        didSet { defaults.set(hasCompletedPasteAccessOnboarding, forKey: Keys.hasCompletedPasteAccessOnboarding) }
+    }
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -75,6 +82,8 @@ final class AppPreferences {
 
         let storedPoll = defaults.object(forKey: Keys.pollIntervalMilliseconds) as? Int
         pollIntervalMilliseconds = Self.clamp(storedPoll ?? 250, to: Self.pollIntervalRange)
+
+        hasCompletedPasteAccessOnboarding = defaults.bool(forKey: Keys.hasCompletedPasteAccessOnboarding)
 
         #if os(iOS)
         monitorMode = .foreground
