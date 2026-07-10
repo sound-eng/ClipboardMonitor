@@ -46,10 +46,13 @@ final class ClipboardController {
     }
 
     /// Reads the current pasteboard, stores a snapshot, and classifies for side-effect logging.
+    /// Skips empty pasteboards and consecutive duplicates (e.g. relaunch with unchanged clipboard).
     func captureSnapshot() {
         let snapshot = reader.readSnapshot()
-        // Skip empty pasteboards — common right after launch or clear.
         guard !snapshot.representations.isEmpty else { return }
+        if let latest = repository.snapshots.first, latest.items == snapshot.items {
+            return
+        }
         repository.add(snapshot)
         _ = snapshot.items.map(classifier.classify)
     }
