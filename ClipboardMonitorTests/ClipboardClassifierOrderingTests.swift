@@ -31,6 +31,20 @@ final class ClipboardClassifierOrderingTests: XCTestCase {
         XCTAssertEqual(primary?.rawType, UTType.rtf.identifier)
     }
 
+    func test_primaryRepresentation_prefersHTMLOverRichText() throws {
+        let html = TestFixtures.representation(type: .html, string: "<b>Hello</b>")
+        let ns = NSAttributedString(string: "Hello")
+        let rtfData = try ns.data(
+            from: NSRange(location: 0, length: ns.length),
+            documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf]
+        )
+        let rtf = TestFixtures.representation(type: .rtf, data: rtfData)
+
+        let primary = classifier.primaryRepresentation(in: [rtf, html])
+
+        XCTAssertEqual(primary?.rawType, UTType.html.identifier)
+    }
+
     func test_primaryRepresentation_prefersHigherPriorityAmongMetadataTypes() {
         let text = TestFixtures.representation(type: .utf8PlainText, string: "hello")
         let image = TestFixtures.representation(type: .png, data: Data([0x89, 0x50, 0x4E, 0x47]))

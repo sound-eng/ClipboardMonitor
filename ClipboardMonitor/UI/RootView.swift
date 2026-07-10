@@ -9,17 +9,22 @@ import SwiftData
 /// App root: owns selection state, clipboard controller, and the 3-pane split.
 struct RootView: View {
     @Bindable var repository: SwiftDataSnapshotRepository
+    @Bindable var preferences: AppPreferences
 
     @State private var controller: ClipboardController
     /// ID-based selection survives repository cache rebuilds after each `add`.
     @State private var selectedSnapshotID: PasteboardSnapshot.ID?
     @State private var selectedRepresentationID: RawRepresentation.ID?
     @State private var isComparing = false
+    @State private var showPreferences = false
+
+    @Environment(\.scenePhase) private var scenePhase
 
     private let classifier = ClipboardClassifier.default
 
-    init(repository: SwiftDataSnapshotRepository) {
+    init(repository: SwiftDataSnapshotRepository, preferences: AppPreferences) {
         self.repository = repository
+        self.preferences = preferences
         _controller = State(initialValue: ClipboardController(repository: repository))
     }
 
@@ -34,6 +39,94 @@ struct RootView: View {
     }
 
     var body: some View {
+        ZStack {
+            inspectorChrome
+                .opacity(showPreferences ? 0 : 1)
+                .allowsHitTesting(!showPreferences)
+
+            if showPreferences {
+                PreferencesView(preferences: preferences, isPresented: $showPreferences)
+                    .transition(.opacity)
+                    .zIndex(1)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: showPreferences)
+        .environment(preferences)
+    }
+
+    // MARK: - Inspector chrome
+
+    @ViewBuilder
+    private var inspectorChrome: some View {
+        Group {
+            switch preferences.representationsLayout {
+            case .middle:
+                threeColumnLayout
+            case .bottom:
+                bottomRepresentationsLayout
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                if let snapshot = selectedSnapshot, snapshot.representations.count >= 2 {
+                    Button("Compare…") { isComparing = true }
+                }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showPreferences = true
+                } label: {
+                    Label("Preferences", systemImage: "gearshape")
+                }
+                .help("Preferences")
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
+        .sheet(isPresented: $isComparing) {
+            if let snapshot = selectedSnapshot {
+                CompareView(
+                    representations: classifier.orderedRepresentations(snapshot.representations),
+                    initialLeftID: selectedRepresentationID,
+                    classifier: classifier
+                )
+            }
+        }
+        .onAppear {
+            repository.maxCount = preferences.maxSnapshots
+            controller.captureSnapshot()
+            applyMonitoringConfiguration()
+            if selectedSnapshotID == nil {
+                selectedSnapshotID = repository.snapshots.first?.id
+            }
+            selectPrimaryRepresentationIfNeeded()
+        }
+        .onDisappear {
+            controller.stop()
+        }
+        .onChange(of: repository.snapshots.map(\.id)) { _, newIDs in
+            if selectedSnapshotID == nil || selectedSnapshotID.map({ !newIDs.contains($0) }) == true {
+                selectedSnapshotID = repository.snapshots.first?.id
+            }
+        }
+        .onChange(of: selectedSnapshotID) { _, _ in
+            selectPrimaryRepresentation()
+        }
+        .onChange(of: preferences.maxSnapshots) { _, newValue in
+            repository.maxCount = newValue
+        }
+        .onChange(of: preferences.monitorMode) { _, _ in
+            applyMonitoringConfiguration()
+        }
+        .onChange(of: preferences.pollIntervalMilliseconds) { _, _ in
+            applyMonitoringConfiguration()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, preferences.monitorMode == .foreground else { return }
+            controller.captureSnapshot()
+        }
+    }
+
+    private var threeColumnLayout: some View {
         NavigationSplitView {
             SnapshotSidebarView(
                 snapshots: repository.snapshots,
@@ -53,41 +146,51 @@ struct RootView: View {
                 classifier: classifier
             )
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                if let snapshot = selectedSnapshot, snapshot.representations.count >= 2 {
-                    Button("Compare…") { isComparing = true }
-                }
-            }
-        }
-        .sheet(isPresented: $isComparing) {
-            if let snapshot = selectedSnapshot {
-                CompareView(
-                    representations: classifier.orderedRepresentations(snapshot.representations),
-                    initialLeftID: selectedRepresentationID,
+    }
+
+    private var bottomRepresentationsLayout: some View {
+        NavigationSplitView {
+            SnapshotSidebarView(
+                snapshots: repository.snapshots,
+                selection: $selectedSnapshotID
+            )
+            .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
+        } detail: {
+            VStack(spacing: 0) {
+                InspectorDetailView(
+                    representation: selectedRepresentation,
                     classifier: classifier
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Divider()
+
+                RepresentationListView(
+                    snapshot: selectedSnapshot,
+                    selection: $selectedRepresentationID,
+                    classifier: classifier
+                )
+                .frame(minHeight: 140, idealHeight: 200, maxHeight: 280)
             }
-        }
-        .onAppear {
-            controller.start()
-            if selectedSnapshotID == nil {
-                selectedSnapshotID = repository.snapshots.first?.id
-            }
-            selectPrimaryRepresentationIfNeeded()
-        }
-        .onDisappear {
-            controller.stop()
-        }
-        .onChange(of: repository.snapshots.map(\.id)) { _, newIDs in
-            if selectedSnapshotID == nil || selectedSnapshotID.map({ !newIDs.contains($0) }) == true {
-                selectedSnapshotID = repository.snapshots.first?.id
-            }
-        }
-        .onChange(of: selectedSnapshotID) { _, _ in
-            selectPrimaryRepresentation()
         }
     }
+
+    // MARK: - Monitoring
+
+    private func applyMonitoringConfiguration() {
+        controller.stop()
+        switch preferences.monitorMode {
+        case .polling:
+            controller.start(
+                monitor: ClipboardMonitor(pollingInterval: preferences.pollInterval)
+            )
+        case .foreground:
+            // No polling task — capture now, then again whenever the scene activates.
+            controller.captureSnapshot()
+        }
+    }
+
+    // MARK: - Selection
 
     /// Prefer the highest-priority inspectable representation when a snapshot is selected.
     private func selectPrimaryRepresentation() {
@@ -112,6 +215,7 @@ struct RootView: View {
 private struct PreviewRoot: View {
     private let container: ModelContainer
     private let repository: SwiftDataSnapshotRepository
+    private let preferences: AppPreferences
 
     init() {
         let schema = Schema([PersistedSnapshot.self, PersistedRepresentation.self])
@@ -123,10 +227,11 @@ private struct PreviewRoot: View {
         }
         self.container = container
         self.repository = repository
+        self.preferences = AppPreferences(defaults: UserDefaults(suiteName: "preview.ClipboardMonitor")!)
     }
 
     var body: some View {
-        RootView(repository: repository)
+        RootView(repository: repository, preferences: preferences)
             .modelContainer(container)
     }
 }

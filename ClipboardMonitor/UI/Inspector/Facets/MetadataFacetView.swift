@@ -57,6 +57,8 @@ struct MetadataFacetView: View {
             return plainTextRows(text, encoding: encoding)
         case .richText(let attributed):
             return richTextRows(attributed)
+        case .html(let source):
+            return htmlRows(source)
         case .color:
             return colorRows
         case .unknown:
@@ -142,6 +144,21 @@ struct MetadataFacetView: View {
         ]
     }
 
+    private func htmlRows(_ source: String) -> [Row] {
+        var rows = [
+            Row(id: "chars", key: "Characters", value: "\(source.count)"),
+            Row(id: "lines", key: "Lines", value: "\(source.components(separatedBy: .newlines).count)"),
+            Row(id: "encoding", key: "Encoding", value: "UTF-8")
+        ]
+        if let title = htmlTitle(in: source) {
+            rows.insert(Row(id: "title", key: "Title", value: title), at: 0)
+        }
+        if let charset = htmlCharset(in: source) {
+            rows.append(Row(id: "charset", key: "Declared charset", value: charset))
+        }
+        return rows
+    }
+
     private var colorRows: [Row] {
         guard let color = content.platformColor else {
             return [Row(id: "err", key: "Color", value: "Unreadable")]
@@ -187,15 +204,10 @@ struct MetadataFacetView: View {
     }
 
     private var unknownRows: [Row] {
-        var rows = [
+        [
             Row(id: "rawType", key: "Raw type", value: representation.rawType),
             Row(id: "bytes", key: "Bytes", value: Formatters.bytes(representation.data.count))
         ]
-        if let text = RepresentationDecoding.text(from: representation),
-           let title = htmlTitle(in: text) {
-            rows.append(Row(id: "title", key: "HTML title", value: title))
-        }
-        return rows
     }
 
     private func encodingName(_ encoding: String.Encoding) -> String {
@@ -219,5 +231,21 @@ struct MetadataFacetView: View {
         guard let match = regex.firstMatch(in: source, range: range),
               let titleRange = Range(match.range(at: 1), in: source) else { return nil }
         return String(source[titleRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func htmlCharset(in source: String) -> String? {
+        // <meta charset="utf-8"> or <meta http-equiv="content-type" content="…charset=…">
+        let patterns = [
+            #"<meta[^>]+charset\s*=\s*["']?\s*([a-zA-Z0-9_\-]+)"#,
+            #"charset\s*=\s*["']?\s*([a-zA-Z0-9_\-]+)"#
+        ]
+        let range = NSRange(source.startIndex..<source.endIndex, in: source)
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+                  let match = regex.firstMatch(in: source, range: range),
+                  let charsetRange = Range(match.range(at: 1), in: source) else { continue }
+            return String(source[charsetRange])
+        }
+        return nil
     }
 }

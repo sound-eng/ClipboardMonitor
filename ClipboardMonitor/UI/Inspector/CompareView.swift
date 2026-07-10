@@ -99,6 +99,7 @@ struct CompareView: View {
         switch content {
         case .plainText(let text, _): return text
         case .richText(let attributed): return String(attributed.characters)
+        case .html(let source): return source
         case .url(let raw, _): return raw
         case .image, .color: return nil
         case .unknown: return RepresentationDecoding.text(from: representation)

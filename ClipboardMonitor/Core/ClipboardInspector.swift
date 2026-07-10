@@ -187,13 +187,34 @@ struct RichTextInspector: ClipboardInspector {
     }
 }
 
+// MARK: - HTML
+
+/// HTML / XHTML inspector — keeps the markup source for Source/Metadata and Overview preview.
+///
+struct HTMLClipboardInspector: ClipboardInspector {
+    let displayName = "HTML Inspector"
+    /// Above rich/plain text so browser HTML wins as primary when siblings are present.
+    let priority: Int = 3
+    let supportedTypes: Set<UTType> = [.html]
+
+    func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
+        guard let string = String(data: representation.data, encoding: .utf8),
+              string.isEmpty == false else { return nil }
+        return .html(string)
+    }
+
+    func supportedFacets(for representation: RawRepresentation) -> [InspectorFacet] {
+        [.overview, .source, .metadata, .hex]
+    }
+}
+
 // MARK: - Image
 
 /// Image type inspector.
 ///
 struct ImageClipboardInspector: ClipboardInspector {
     let displayName = "Image Inspector"
-    let priority: Int = 3
+    let priority: Int = 4
     var supportedTypes: Set<UTType> = [.png, .jpeg, .exr, .bmp, .tiff, .pdf, .svg]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
@@ -211,7 +232,7 @@ struct ImageClipboardInspector: ClipboardInspector {
 ///
 struct ColorClipboardInspector: ClipboardInspector {
     let displayName = "Color Inspector"
-    let priority: Int = 4
+    let priority: Int = 5
     let supportedTypes: Set<UTType> = [.appleColor]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {

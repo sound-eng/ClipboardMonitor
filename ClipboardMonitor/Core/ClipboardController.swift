@@ -9,7 +9,7 @@ import Foundation
 ///
 @MainActor
 final class ClipboardController {
-    private let monitor: ClipboardMonitoring
+    private var monitor: any ClipboardMonitoring
     private let reader: ClipboardReading
     private let repository: any SnapshotRepositoryProtocol
     private let classifier: ClipboardClassifier
@@ -29,11 +29,14 @@ final class ClipboardController {
         self.classifier = classifier ?? .default
     }
 
-    /// Starts listening for pasteboard change events.
-    func start() {
+    /// Starts listening for pasteboard change events from `monitor`.
+    func start(monitor: (any ClipboardMonitoring)? = nil) {
+        if let monitor {
+            self.monitor = monitor
+        }
         task?.cancel()
         task = Task {
-            for await event in monitor.events {
+            for await event in self.monitor.events {
                 switch event {
                 case .changed:
                     self.captureSnapshot()

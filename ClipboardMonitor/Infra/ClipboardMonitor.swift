@@ -27,8 +27,7 @@ final class ClipboardMonitor: ClipboardMonitoring {
     ///
     var events: AsyncStream<ClipboardEvent> {
         AsyncStream { continuation in
-            // We want to capture the initial pasteboard state too. To exclude it, use 'var last = pasteboard.changeCount':
-            var last = 0
+            var last = pasteboard.changeCount
 
             let task = Task {
                 while !Task.isCancelled {

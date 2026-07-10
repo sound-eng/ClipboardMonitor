@@ -10,8 +10,10 @@ import SwiftData
 struct ClipboardMonitorApp: App {
     private let sharedModelContainer: ModelContainer
     @State private var repository: SwiftDataSnapshotRepository
+    @State private var preferences: AppPreferences
 
     init() {
+        let preferences = AppPreferences()
         let schema = Schema([
             PersistedSnapshot.self,
             PersistedRepresentation.self
@@ -23,8 +25,12 @@ struct ClipboardMonitorApp: App {
             // Create the repository once with the container's main context so the
             // same instance is observed by RootView for the app lifetime.
             _repository = State(
-                initialValue: SwiftDataSnapshotRepository(modelContext: container.mainContext)
+                initialValue: SwiftDataSnapshotRepository(
+                    modelContext: container.mainContext,
+                    maxCount: preferences.maxSnapshots
+                )
             )
+            _preferences = State(initialValue: preferences)
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -32,7 +38,7 @@ struct ClipboardMonitorApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(repository: repository)
+            RootView(repository: repository, preferences: preferences)
         }
         .modelContainer(sharedModelContainer)
     }

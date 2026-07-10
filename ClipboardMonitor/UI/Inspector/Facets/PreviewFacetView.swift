@@ -28,6 +28,8 @@ struct PreviewFacetView: View {
                     .textSelection(.enabled)
             case .richText(let attributed):
                 richTextPreview(attributed)
+            case .html(let source):
+                htmlPreview(source)
             case .color:
                 colorPreview
             case .unknown:
@@ -51,6 +53,53 @@ struct PreviewFacetView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(.quaternary)
             )
+    }
+
+    /// Minimal HTML preview: Foundation's HTML → attributed text (no WebKit / JS).
+    @ViewBuilder
+    private func htmlPreview(_ source: String) -> some View {
+        if let attributed = attributedString(fromHTML: source) {
+            Text(attributed)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+                .padding(12)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .background(documentPaperColor(for: attributed), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(.quaternary)
+                )
+        } else {
+            // Fall back to a short source snippet when HTML can't be rendered.
+            Text(source)
+                .font(.system(.body, design: .monospaced))
+                .lineLimit(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+                .padding(12)
+                .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(.quaternary)
+                )
+        }
+    }
+
+    private func attributedString(fromHTML source: String) -> AttributedString? {
+        guard let data = source.data(using: .utf8) else { return nil }
+        do {
+            let ns = try NSAttributedString(
+                data: data,
+                options: [
+                    .documentType: NSAttributedString.DocumentType.html,
+                    .characterEncoding: String.Encoding.utf8.rawValue
+                ],
+                documentAttributes: nil
+            )
+            return AttributedString(ns)
+        } catch {
+            return nil
+        }
     }
 
     /// Card fill for rich-text preview: dominant run background when it covers most

@@ -11,15 +11,24 @@ import Observation
 @Observable
 @MainActor
 final class SwiftDataSnapshotRepository: SnapshotRepositoryProtocol {
-    static let maxCount = 100
+    /// Rolling history cap. Changing this immediately evicts overflow.
+    var maxCount: Int {
+        didSet {
+            guard maxCount != oldValue else { return }
+            evictIfNeeded()
+            save()
+            refresh()
+        }
+    }
 
     private let modelContext: ModelContext
 
     /// In-memory cache kept in sync with the store so the UI never re-fetches on every read.
     private(set) var snapshots: [PasteboardSnapshot] = []
 
-    init(modelContext: ModelContext) {
+    init(modelContext: ModelContext, maxCount: Int = 100) {
         self.modelContext = modelContext
+        self.maxCount = maxCount
         refresh()
     }
 
@@ -37,9 +46,9 @@ final class SwiftDataSnapshotRepository: SnapshotRepositoryProtocol {
         let descriptor = FetchDescriptor<PersistedSnapshot>(
             sortBy: [SortDescriptor(\.capturedAt, order: .forward)]
         )
-        guard let all = try? modelContext.fetch(descriptor), all.count > Self.maxCount else { return }
+        guard let all = try? modelContext.fetch(descriptor), all.count > maxCount else { return }
         // Delete oldest first until we are back under the cap.
-        let overflow = all.count - Self.maxCount
+        let overflow = all.count - maxCount
         for snapshot in all.prefix(overflow) {
             modelContext.delete(snapshot)
         }

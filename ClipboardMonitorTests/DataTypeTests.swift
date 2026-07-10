@@ -93,6 +93,7 @@ final class ClipboardContentDisplayTitleTests: XCTestCase {
         XCTAssertEqual(ClipboardContent.image(Data()).displayTitle, "Image")
         XCTAssertEqual(ClipboardContent.plainText("x", .utf8).displayTitle, "Plain text")
         XCTAssertEqual(ClipboardContent.richText(AttributedString("x")).displayTitle, "Rich text")
+        XCTAssertEqual(ClipboardContent.html("<b>x</b>").displayTitle, "HTML")
         XCTAssertEqual(ClipboardContent.color(Data()).displayTitle, "Color")
     }
 

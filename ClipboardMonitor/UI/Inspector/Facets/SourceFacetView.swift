@@ -36,6 +36,8 @@ struct SourceFacetView: View {
             // Prefer the original RTF markup when it decodes; fall back to plain characters.
             return RepresentationDecoding.text(from: representation)
                 ?? String(attributed.characters)
+        case .html(let source):
+            return source
         case .url(let raw, _):
             return raw
         case .image, .color:
