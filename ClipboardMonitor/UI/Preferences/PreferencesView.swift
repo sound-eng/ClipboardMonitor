@@ -16,13 +16,9 @@ struct PreferencesView: View {
                 historySection
                 hexSection
                 monitoringSection
-                layoutSection
             }
             .formStyle(.grouped)
             .navigationTitle("Preferences")
-            #if os(macOS)
-            .navigationSubtitle("ClipboardMonitor")
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -118,25 +114,6 @@ struct PreferencesView: View {
             #else
             Text(monitoringFooter)
             #endif
-        }
-    }
-
-    private var layoutSection: some View {
-        Section {
-            Picker(selection: $preferences.representationsLayout) {
-                ForEach(AppPreferences.RepresentationsLayout.allCases) { layout in
-                    Label(layout.title, systemImage: layout.systemImage).tag(layout)
-                }
-            } label: {
-                Label("Representations", systemImage: "rectangle.split.3x1")
-            }
-            #if os(macOS)
-            .pickerStyle(.inline)
-            #endif
-        } header: {
-            Label("Layout", systemImage: "rectangle.3.group")
-        } footer: {
-            Text("Middle column keeps the classic three-pane inspector; bottom pane stacks representations under the detail view.")
         }
     }
 

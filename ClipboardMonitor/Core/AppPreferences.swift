@@ -31,33 +31,11 @@ final class AppPreferences {
         }
     }
 
-    enum RepresentationsLayout: String, CaseIterable, Identifiable, Sendable {
-        case middle
-        case bottom
-
-        var id: String { rawValue }
-
-        var title: String {
-            switch self {
-            case .middle: "Middle column"
-            case .bottom: "Bottom pane"
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .middle: "sidebar.left"
-            case .bottom: "rectangle.split.2x1"
-            }
-        }
-    }
-
     private enum Keys {
         static let maxSnapshots = "preferences.maxSnapshots"
         static let maxHexDisplayBytes = "preferences.maxHexDisplayBytes"
         static let monitorMode = "preferences.monitorMode"
         static let pollIntervalMilliseconds = "preferences.pollIntervalMilliseconds"
-        static let representationsLayout = "preferences.representationsLayout"
     }
 
     /// Rolling history cap. Oldest snapshots are evicted when exceeded.
@@ -80,11 +58,6 @@ final class AppPreferences {
         didSet { defaults.set(pollIntervalMilliseconds, forKey: Keys.pollIntervalMilliseconds) }
     }
 
-    /// Where the representations list sits relative to the inspector.
-    var representationsLayout: RepresentationsLayout {
-        didSet { defaults.set(representationsLayout.rawValue, forKey: Keys.representationsLayout) }
-    }
-
     var pollInterval: Duration {
         .milliseconds(pollIntervalMilliseconds)
     }
@@ -102,13 +75,6 @@ final class AppPreferences {
 
         let storedPoll = defaults.object(forKey: Keys.pollIntervalMilliseconds) as? Int
         pollIntervalMilliseconds = Self.clamp(storedPoll ?? 250, to: Self.pollIntervalRange)
-
-        if let raw = defaults.string(forKey: Keys.representationsLayout),
-           let layout = RepresentationsLayout(rawValue: raw) {
-            representationsLayout = layout
-        } else {
-            representationsLayout = .bottom
-        }
 
         #if os(iOS)
         monitorMode = .foreground

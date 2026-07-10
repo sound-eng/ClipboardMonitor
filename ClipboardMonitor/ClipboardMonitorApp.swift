@@ -11,6 +11,7 @@ struct ClipboardMonitorApp: App {
     private let sharedModelContainer: ModelContainer
     @State private var repository: SwiftDataSnapshotRepository
     @State private var preferences: AppPreferences
+    @State private var showPreferences = false
 
     init() {
         let preferences = AppPreferences()
@@ -38,8 +39,22 @@ struct ClipboardMonitorApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView(repository: repository, preferences: preferences)
+            RootView(
+                repository: repository,
+                preferences: preferences,
+                showPreferences: $showPreferences
+            )
         }
         .modelContainer(sharedModelContainer)
+        #if os(macOS)
+        .commands {
+            CommandGroup(replacing: .appSettings) {
+                Button("Preferences…") {
+                    showPreferences = true
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
+        #endif
     }
 }

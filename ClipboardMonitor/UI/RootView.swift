@@ -6,25 +6,30 @@
 import SwiftUI
 import SwiftData
 
-/// App root: owns selection state, clipboard controller, and the 3-pane split.
+/// App root: owns selection state, clipboard controller, and the inspector chrome.
 struct RootView: View {
     @Bindable var repository: SwiftDataSnapshotRepository
     @Bindable var preferences: AppPreferences
+    @Binding var showPreferences: Bool
 
     @State private var controller: ClipboardController
     /// ID-based selection survives repository cache rebuilds after each `add`.
     @State private var selectedSnapshotID: PasteboardSnapshot.ID?
     @State private var selectedRepresentationID: RawRepresentation.ID?
     @State private var isComparing = false
-    @State private var showPreferences = false
 
     @Environment(\.scenePhase) private var scenePhase
 
     private let classifier = ClipboardClassifier.default
 
-    init(repository: SwiftDataSnapshotRepository, preferences: AppPreferences) {
+    init(
+        repository: SwiftDataSnapshotRepository,
+        preferences: AppPreferences,
+        showPreferences: Binding<Bool>
+    ) {
         self.repository = repository
         self.preferences = preferences
+        _showPreferences = showPreferences
         _controller = State(initialValue: ClipboardController(repository: repository))
     }
 
@@ -39,6 +44,13 @@ struct RootView: View {
     }
 
     var body: some View {
+        #if os(iOS)
+        inspectorChrome
+            .sheet(isPresented: $showPreferences) {
+                PreferencesView(preferences: preferences, isPresented: $showPreferences)
+            }
+            .environment(preferences)
+        #else
         ZStack {
             inspectorChrome
                 .opacity(showPreferences ? 0 : 1)
@@ -52,35 +64,33 @@ struct RootView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: showPreferences)
         .environment(preferences)
+        #endif
     }
 
     // MARK: - Inspector chrome
 
-    @ViewBuilder
     private var inspectorChrome: some View {
-        Group {
-            switch preferences.representationsLayout {
-            case .middle:
-                threeColumnLayout
-            case .bottom:
-                bottomRepresentationsLayout
+        NavigationSplitView {
+            sidebarColumn
+        } detail: {
+            VStack(spacing: 0) {
+                InspectorDetailView(
+                    representation: selectedRepresentation,
+                    classifier: classifier
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+//                .navigationTitle(showPreferences ? "Preferences" : "Inspector")
+
+                Divider()
+
+                RepresentationListView(
+                    snapshot: selectedSnapshot,
+                    selection: $selectedRepresentationID,
+                    classifier: classifier
+                )
+                .frame(minHeight: 140, idealHeight: 200, maxHeight: 280)
             }
-        }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                if let snapshot = selectedSnapshot, snapshot.representations.count >= 2 {
-                    Button("Compare…") { isComparing = true }
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showPreferences = true
-                } label: {
-                    Label("Preferences", systemImage: "gearshape")
-                }
-                .help("Preferences")
-                .keyboardShortcut(",", modifiers: .command)
-            }
+            .toolbar { compareToolbarItem }
         }
         .sheet(isPresented: $isComparing) {
             if let snapshot = selectedSnapshot {
@@ -126,51 +136,35 @@ struct RootView: View {
         }
     }
 
-    private var threeColumnLayout: some View {
-        NavigationSplitView {
-            SnapshotSidebarView(
-                snapshots: repository.snapshots,
-                selection: $selectedSnapshotID
-            )
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
-        } content: {
-            RepresentationListView(
-                snapshot: selectedSnapshot,
-                selection: $selectedRepresentationID,
-                classifier: classifier
-            )
-            .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 400)
-        } detail: {
-            InspectorDetailView(
-                representation: selectedRepresentation,
-                classifier: classifier
-            )
+    /// Gear lives on the sidebar so it remains reachable on iPadOS split columns.
+    private var sidebarColumn: some View {
+        SnapshotSidebarView(
+            snapshots: repository.snapshots,
+            selection: $selectedSnapshotID
+        )
+        .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showPreferences = true
+                } label: {
+                    Label("Preferences", systemImage: "gearshape")
+                }
+                .help("Preferences")
+            }
         }
     }
 
-    private var bottomRepresentationsLayout: some View {
-        NavigationSplitView {
-            SnapshotSidebarView(
-                snapshots: repository.snapshots,
-                selection: $selectedSnapshotID
-            )
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
-        } detail: {
-            VStack(spacing: 0) {
-                InspectorDetailView(
-                    representation: selectedRepresentation,
-                    classifier: classifier
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+    private var canCompare: Bool {
+        !showPreferences
+            && (selectedSnapshot?.representations.count ?? 0) >= 2
+    }
 
-                Divider()
-
-                RepresentationListView(
-                    snapshot: selectedSnapshot,
-                    selection: $selectedRepresentationID,
-                    classifier: classifier
-                )
-                .frame(minHeight: 140, idealHeight: 200, maxHeight: 280)
+    @ToolbarContentBuilder
+    private var compareToolbarItem: some ToolbarContent {
+        if canCompare {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Compare…") { isComparing = true }
             }
         }
     }
@@ -231,7 +225,11 @@ private struct PreviewRoot: View {
     }
 
     var body: some View {
-        RootView(repository: repository, preferences: preferences)
+        RootView(
+            repository: repository,
+            preferences: preferences,
+            showPreferences: .constant(false)
+        )
             .modelContainer(container)
     }
 }

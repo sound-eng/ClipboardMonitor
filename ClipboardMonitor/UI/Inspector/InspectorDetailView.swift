@@ -31,7 +31,6 @@ struct InspectorDetailView: View {
                 )
             }
         }
-        .navigationTitle("Inspector")
         .onChange(of: representation?.id) { _, _ in
             selectedFacet = .overview
         }
