@@ -2,8 +2,6 @@
 //  ClipboardClassifier.swift
 //  ClipboardMonitor
 //
-//  Created by Oleh Naumenko on 08.07.2026.
-//
 
 import Foundation
 import UniformTypeIdentifiers
@@ -18,6 +16,20 @@ final class ClipboardClassifier {
         self.inspectors = inspectors.sorted { $0.priority > $1.priority }
     }
 
+    /// Default static initialiser, packs in all available inspectors.
+    /// 
+    static let `default` = ClipboardClassifier(inspectors: [
+        URLClipboardInspector(),
+        PlainTextInspector(),
+        ImageClipboardInspector(),
+        ColorClipboardInspector()
+    ])
+
+    /// Classify the incoming raw pasteboard item into our Content enum
+    /// - Parameters:
+    ///   - item: raw pasteboard item containing data type representations to unpack and classify
+    /// - Returns: Array of Content items which allow to reconstruct actual objects contained within representations
+    ///
     func classify(_ item: RawPasteboardItem) -> [ClipboardContent] {
         var contents = [ClipboardContent]()
 

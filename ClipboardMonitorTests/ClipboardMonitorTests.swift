@@ -2,8 +2,6 @@
 //  ClipboardMonitorTests.swift
 //  ClipboardMonitorTests
 //
-//  Created by Oleh Naumenko on 08.07.2026.
-//
 
 import XCTest
 

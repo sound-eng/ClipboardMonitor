@@ -2,8 +2,6 @@
 //  ClipboardMonitorApp.swift
 //  ClipboardMonitor
 //
-//  Created by Oleh Naumenko on 08.07.2026.
-//
 
 import SwiftUI
 import SwiftData

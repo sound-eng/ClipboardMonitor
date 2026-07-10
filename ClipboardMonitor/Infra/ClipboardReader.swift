@@ -1,29 +1,27 @@
+//
+//  ClipboardMonitor.swift
+//  ClipboardMonitor
+//
+
 #if os(macOS)
 import AppKit
 #else
 import UIKit
 #endif
-import Foundation
+
 import UniformTypeIdentifiers
 
-protocol PasteboardReader {
+protocol ClipboardReading {
     func readSnapshot() -> PasteboardSnapshot
 }
 
 @MainActor
-final class ClipboardReader: PasteboardReader {
+final class ClipboardReader: ClipboardReading {
+    private let pasteboard: PlatformPasteboard
 
-    #if os(macOS)
-    private let pasteboard: NSPasteboard
-    init(pasteboard: NSPasteboard = .general) {
+    init(pasteboard: PlatformPasteboard = .general) {
         self.pasteboard = pasteboard
     }
-    #else
-    private let pasteboard: UIPasteboard
-    init(pasteboard: UIPasteboard = .general) {
-        self.pasteboard = pasteboard
-    }
-    #endif
 
     func readSnapshot() -> PasteboardSnapshot {
         #if os(macOS)
@@ -71,7 +69,7 @@ final class ClipboardReader: PasteboardReader {
 }
 
 @MainActor
-final class FakePasteboardReader: PasteboardReader {
+final class FakePasteboardReader: ClipboardReading {
     var snapshotToReturn = PasteboardSnapshot(items: [])
     func readSnapshot() -> PasteboardSnapshot { snapshotToReturn }
 }

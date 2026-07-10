@@ -1,11 +1,14 @@
-#if os(macOS)
-import AppKit
-#else
-import UIKit
-#endif
+//
+//  ClipboardInspector.swift
+//  ClipboardMonitor
+//
+
+import Foundation
 import UniformTypeIdentifiers
 
-
+/// All inspectors conform to this protocol
+/// Inspector is a struct responsible for inspecting the incoming raw pasteboard representations and turning them into specific contents
+///
 protocol ClipboardInspector {
     var supportedTypes: Set<UTType> { get }
     var priority: Int { get }
@@ -16,20 +19,11 @@ extension ClipboardInspector {
     var priority: Int { 0 }
 }
 
-extension Array where Element == ClipboardInspector {
-    static var all: [ClipboardInspector] {
-        [
-            URLClipboardInspector(),
-            PlainTextInspector(),
-            ImageClipboardInspector(),
-            ColorClipboardInspector()
-        ]
-    }
-}
-
+/// URL type inspector
+///
 struct URLClipboardInspector: ClipboardInspector {
     let priority: Int = 0
-    var supportedTypes: Set<UTType> { [.url, .fileURL] }
+    var supportedTypes: Set<UTType> = [.url, .fileURL]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
         guard let string = String(data: representation.data, encoding: .utf8),
@@ -37,12 +31,13 @@ struct URLClipboardInspector: ClipboardInspector {
         return .url(url)
     }
 }
-
+/// Plain text type inspector
+///
 struct PlainTextInspector: ClipboardInspector {
     let priority: Int = 1
-    var supportedTypes: Set<UTType> { [.text, .plainText, .utf8PlainText, .utf16PlainText, .utf16ExternalPlainText] }
+    var supportedTypes: Set<UTType> = [.text, .plainText, .utf8PlainText, .utf16PlainText, .utf16ExternalPlainText]
 
-    let typeEncodingMap: [UTType: String.Encoding] = [
+    private let typeEncodingMap: [UTType: String.Encoding] = [
         .plainText: String.Encoding.utf8,
         .utf8PlainText: String.Encoding.utf8,
         .utf16PlainText: String.Encoding.utf16,
@@ -58,31 +53,25 @@ struct PlainTextInspector: ClipboardInspector {
     }
 }
 
+/// Image type inspector
+///
 struct ImageClipboardInspector: ClipboardInspector {
     let priority: Int = 2
-    var supportedTypes: Set<UTType> { [.png, .jpeg] }
+    var supportedTypes: Set<UTType> = [.png, .jpeg]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
-        guard let image = PlatformImage(data: representation.data) else { return nil }
-        return .image(image)
+        return .image(representation.data)
     }
 }
 
+/// Color type inspector
+///
 struct ColorClipboardInspector: ClipboardInspector {
     let priority: Int = 3
     let supportedTypes: Set<UTType> = [.appleColor]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
-        #if os(macOS)
-        guard let color = try? NSKeyedUnarchiver.unarchivedObject(
-                ofClass: NSColor.self, from: representation.data
-              ) else { return nil }
-        #else
-        guard let color = try? NSKeyedUnarchiver.unarchivedObject(
-                ofClass: UIColor.self, from: representation.data
-              ) else { return nil }
-        #endif
-        return .color(color)
+        return .color(representation.data)
     }
 }
 

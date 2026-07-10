@@ -2,11 +2,10 @@
 //  UTType+Raw.swift
 //  ClipboardMonitor
 //
-//  Created by Oleh Naumenko on 09.07.2026.
-//
 
 import UniformTypeIdentifiers
 
 extension UTType {
+    /// Custom Pasteboard uniform type id to represent color, for cleaner code.
     static let appleColor = UTType("com.apple.cocoa.pasteboard.color")!
 }

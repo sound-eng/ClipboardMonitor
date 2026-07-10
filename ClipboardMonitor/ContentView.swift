@@ -2,8 +2,6 @@
 //  ContentView.swift
 //  ClipboardMonitor
 //
-//  Created by Oleh Naumenko on 08.07.2026.
-//
 
 import SwiftUI
 import SwiftData
@@ -11,8 +9,8 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
-
-    private let controller = ClipboardController()
+    
+    @State private var controller = ClipboardController()
 
     var body: some View {
         NavigationSplitView {

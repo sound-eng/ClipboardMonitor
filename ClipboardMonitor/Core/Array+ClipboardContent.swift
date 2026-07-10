@@ -2,11 +2,12 @@
 //  Array+ClipboardContent.swift
 //  ClipboardMonitor
 //
-//  Created by Oleh Naumenko on 09.07.2026.
-//
 
+import Foundation
 
 extension Array where Element == ClipboardContent {
+    /// Extracts primary clipboard item from content array
+    ///
     var primary: ClipboardContent? {
         first { if case .unknown = $0 { return false }; return true } ?? first
     }
