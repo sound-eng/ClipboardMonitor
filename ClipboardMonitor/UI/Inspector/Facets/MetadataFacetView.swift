@@ -25,19 +25,26 @@ struct MetadataFacetView: View {
                 description: Text("Nothing structured to show for this type.")
             )
         } else {
-            Table(rows) {
-                TableColumn("Key") { row in
-                    Text(row.key)
-                        .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(rows) { row in
+                        metadataRow(row.key, value: row.value)
+                    }
                 }
-                .width(min: 100, ideal: 140)
-                TableColumn("Value") { row in
-                    Text(row.value)
-                        .font(.body.monospaced())
-                        .textSelection(.enabled)
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(20)
             }
-            .padding(8)
+        }
+    }
+
+    private func metadataRow(_ label: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.body.monospaced())
+                .textSelection(.enabled)
         }
     }
 
@@ -88,7 +95,7 @@ struct MetadataFacetView: View {
             rows.append(Row(id: "query", key: "Query", value: query))
         }
         for item in components.queryItems ?? [] {
-            rows.append(Row(id: "q-\(item.name)", key: "  \(item.name)", value: item.value ?? ""))
+            rows.append(Row(id: "q-\(item.name)", key: item.name, value: item.value ?? ""))
         }
         if let fragment = components.fragment {
             rows.append(Row(id: "fragment", key: "Fragment", value: fragment))

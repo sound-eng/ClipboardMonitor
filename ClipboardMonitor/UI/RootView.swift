@@ -19,6 +19,7 @@ struct RootView: View {
     @State private var isComparing = false
     /// When true, the inspector tracks the newest snapshot as copies arrive.
     @State private var followLatest = true
+    @State private var imagePreviewData: Data?
     #if os(iOS)
     @State private var showPasteAccessOnboarding = false
     @Environment(\.openURL) private var openURL
@@ -86,22 +87,43 @@ struct RootView: View {
                     }
                 )
             }
+            .fullScreenCover(isPresented: imagePreviewPresented) {
+                if let data = imagePreviewData {
+                    FullWindowImagePreview(data: data, isPresented: imagePreviewPresented)
+                }
+            }
             .environment(preferences)
+            .environment(\.presentImagePreview) { imagePreviewData = $0 }
         #else
         ZStack {
             inspectorChrome
                 .opacity(showPreferences ? 0 : 1)
-                .allowsHitTesting(!showPreferences)
+                .allowsHitTesting(!showPreferences && imagePreviewData == nil)
 
             if showPreferences {
                 PreferencesView(preferences: preferences, isPresented: $showPreferences)
                     .transition(.opacity)
                     .zIndex(1)
             }
+
+            if let data = imagePreviewData {
+                FullWindowImagePreview(data: data, isPresented: imagePreviewPresented)
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
         }
         .animation(.easeInOut(duration: 0.2), value: showPreferences)
+        .animation(.easeInOut(duration: 0.2), value: imagePreviewData != nil)
         .environment(preferences)
+        .environment(\.presentImagePreview) { imagePreviewData = $0 }
         #endif
+    }
+
+    private var imagePreviewPresented: Binding<Bool> {
+        Binding(
+            get: { imagePreviewData != nil },
+            set: { if !$0 { imagePreviewData = nil } }
+        )
     }
 
     // MARK: - Inspector chrome

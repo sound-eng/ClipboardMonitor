@@ -15,11 +15,13 @@ import UIKit
 struct PreviewFacetView: View {
     let content: ClipboardContent
 
+    @Environment(\.presentImagePreview) private var presentImagePreview
+
     var body: some View {
         Group {
             switch content {
             case .image(let data):
-                imagePreview(data)
+                imagePreviewThumbnail(data)
             case .url(let raw, let parsed):
                 urlPreview(raw: raw, parsed: parsed)
             case .plainText(let text, _):
@@ -149,25 +151,42 @@ struct PreviewFacetView: View {
     }
 
     @ViewBuilder
-    private func imagePreview(_ data: Data) -> some View {
+    private func imagePreviewThumbnail(_ data: Data) -> some View {
         #if os(macOS)
         if let nsImage = NSImage(data: data) {
-            Image(nsImage: nsImage)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, maxHeight: 320)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Button {
+                presentImagePreview(data)
+            } label: {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: 320)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .help("Show full-window preview")
+            .accessibilityLabel("Image preview")
+            .accessibilityHint("Shows a full-window preview")
         } else {
             Text("Unreadable image")
                 .foregroundStyle(.secondary)
         }
         #else
         if let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, maxHeight: 320)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Button {
+                presentImagePreview(data)
+            } label: {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: 320)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Image preview")
+            .accessibilityHint("Shows a full-window preview")
         } else {
             Text("Unreadable image")
                 .foregroundStyle(.secondary)

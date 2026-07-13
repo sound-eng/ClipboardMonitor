@@ -19,6 +19,7 @@ struct PreferencesView: View {
                 #if os(iOS)
                 pasteAccessSection
                 #endif
+                aboutSection
             }
             .formStyle(.grouped)
             .navigationTitle("Preferences")
@@ -135,6 +136,29 @@ struct PreferencesView: View {
         }
     }
     #endif
+
+    private var aboutSection: some View {
+        Section {
+            LabeledContent("Version") {
+                Text(appVersionLabel)
+                    .font(.body.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+        } header: {
+            Label("About", systemImage: "info.circle")
+        }
+    }
+
+    private var appVersionLabel: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "—"
+        let build = info?["CFBundleVersion"] as? String
+        if let build, !build.isEmpty {
+            return "\(version) (\(build))"
+        }
+        return version
+    }
 
     private var monitoringFooter: String {
         switch preferences.monitorMode {
