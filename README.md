@@ -10,7 +10,7 @@ Developer-oriented clipboard inspector for Apple platforms. It watches the paste
 - Classifies representations (plain text, rich text, HTML, URL, image, color, and unknowns)
 - Shows an inspector UI:
   - **History** - recent snapshots with titles and (on macOS) source app
-  - **Inspector** - overview (with inline preview), source, metadata, hex, and compare
+  - **Inspector** - overview (with inline preview; images open full-window), source, metadata, hex, and compare
   - **Representations** - all UTTypes in the selected snapshot (primary first), under the inspector
 - **Follow Latest** keeps the inspector on the newest copy, with a badge when you drift behind
 - Preferences for history size, hex display limit, and (macOS) monitoring mode

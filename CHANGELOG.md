@@ -9,14 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Full-window image preview from Overview (✕, Esc, or swipe down to dismiss)
-- Preferences About section showing the app version
+- Click or tap an Overview image to open a full-window preview that fits the image; dismiss with ✕, Esc, or swipe down
+- Preferences **About** section showing the marketing version (and build)
 - Minimal app icon
-- macOS: keep the app alive after closing the main window; reopen from the Window menu
+- macOS: app stays running after the main window closes; reopen from the **Window** menu
 
 ### Changed
 
-- Metadata facet uses stacked key/value rows instead of a table
+- Metadata facet presents stacked key/value rows instead of a table
 
 ## [0.6.0] - 2026-07-10
 
