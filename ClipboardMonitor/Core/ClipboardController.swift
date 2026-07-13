@@ -9,7 +9,7 @@ import Foundation
 ///
 @MainActor
 final class ClipboardController {
-    private let monitor: ClipboardMonitoring
+    private var monitor: any ClipboardMonitoring
     private let reader: ClipboardReading
     private let repository: any SnapshotRepositoryProtocol
     private let classifier: ClipboardClassifier
@@ -29,11 +29,14 @@ final class ClipboardController {
         self.classifier = classifier ?? .default
     }
 
-    /// Starts listening for pasteboard change events.
-    func start() {
+    /// Starts listening for pasteboard change events from `monitor`.
+    func start(monitor: (any ClipboardMonitoring)? = nil) {
+        if let monitor {
+            self.monitor = monitor
+        }
         task?.cancel()
         task = Task {
-            for await event in monitor.events {
+            for await event in self.monitor.events {
                 switch event {
                 case .changed:
                     self.captureSnapshot()
@@ -43,10 +46,13 @@ final class ClipboardController {
     }
 
     /// Reads the current pasteboard, stores a snapshot, and classifies for side-effect logging.
+    /// Skips empty pasteboards and consecutive duplicates (e.g. relaunch with unchanged clipboard).
     func captureSnapshot() {
         let snapshot = reader.readSnapshot()
-        // Skip empty pasteboards — common right after launch or clear.
         guard !snapshot.representations.isEmpty else { return }
+        if let latest = repository.snapshots.first, latest.items == snapshot.items {
+            return
+        }
         repository.add(snapshot)
         _ = snapshot.items.map(classifier.classify)
     }

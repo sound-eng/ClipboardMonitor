@@ -245,6 +245,37 @@ final class RichTextInspectorTests: XCTestCase {
     }
 }
 
+// MARK: - HTMLClipboardInspector Tests
+
+final class HTMLClipboardInspectorTests: XCTestCase {
+
+    private let inspector = HTMLClipboardInspector()
+
+    func test_html_returnsHTML() {
+        let source = #"<meta charset="utf-8"><b>Hello</b>"#
+        let rep = TestFixtures.representation(type: .html, string: source)
+
+        let result = inspector.inspect(rep)
+
+        if case .html(let decoded) = result {
+            XCTAssertEqual(decoded, source)
+        } else {
+            XCTFail("Expected .html, got: \(String(describing: result))")
+        }
+    }
+
+    func test_emptyData_returnsNil() {
+        let rep = TestFixtures.representation(type: .html, data: Data())
+        XCTAssertNil(inspector.inspect(rep))
+    }
+
+    func test_supportedFacets_includeSourceAndMetadata() {
+        let rep = TestFixtures.representation(type: .html, string: "<p>x</p>")
+        let facets = inspector.supportedFacets(for: rep)
+        XCTAssertEqual(facets, [.overview, .source, .metadata, .hex])
+    }
+}
+
 // MARK: - ColorClipboardInspector Tests
 
 final class ColorClipboardInspectorTests: XCTestCase {

@@ -17,6 +17,7 @@ enum ContentTypeIcon {
         case .url: return "link"
         case .plainText: return "doc.plaintext"
         case .richText: return "doc.richtext"
+        case .html: return "chevron.left.forwardslash.chevron.right"
         case .color: return "paintpalette"
         case .unknown: return "questionmark.square"
         }
@@ -26,6 +27,8 @@ enum ContentTypeIcon {
         guard let type = representation.type else { return "questionmark.square" }
         if type.conforms(to: .image) { return "photo" }
         if type.conforms(to: .url) || type.conforms(to: .fileURL) { return "link" }
+        if type.conforms(to: .html) { return "chevron.left.forwardslash.chevron.right" }
+        if type.conforms(to: .rtf) || type.conforms(to: .rtfd) { return "doc.richtext" }
         if type.conforms(to: .text) { return "doc.plaintext" }
         if type == .appleColor { return "paintpalette" }
         return "doc"

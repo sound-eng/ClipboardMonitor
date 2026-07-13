@@ -119,6 +119,21 @@ final class ClipboardClassifierTests: XCTestCase {
         }), "Expected .color with matching data, got: \(contents)")
     }
 
+    func test_classify_html() {
+        let source = "<html><title>Hi</title><body>Hello</body></html>"
+        let rep = TestFixtures.representation(type: .html, string: source)
+        let item = TestFixtures.item(rep)
+
+        let contents = classifier.classify(item)
+
+        XCTAssertTrue(contents.contains(where: {
+            if case .html(let decoded) = $0 {
+                return decoded == source
+            }
+            return false
+        }), "Expected .html, got: \(contents)")
+    }
+
     // MARK: - 1.2 Unknown / fallback
 
     func test_classify_unknownType_returnsUnknown() {

@@ -9,6 +9,7 @@ import SwiftUI
 struct InspectorDetailView: View {
     let representation: RawRepresentation?
     let classifier: ClipboardClassifier
+    var source: PasteboardSource? = nil
 
     /// Owned here so parent selection churn cannot clobber the active tab mid-click.
     @State private var selectedFacet: InspectorFacet = .overview
@@ -31,7 +32,6 @@ struct InspectorDetailView: View {
                 )
             }
         }
-        .navigationTitle("Inspector")
         .onChange(of: representation?.id) { _, _ in
             selectedFacet = .overview
         }
@@ -50,14 +50,12 @@ struct InspectorDetailView: View {
 
     private func facetTabStrip(for representation: RawRepresentation) -> some View {
         let available = facets(for: representation)
-        return HStack(spacing: 4) {
-            ForEach(available) { facet in
-                facetTab(facet, selected: selectedFacet == facet) {
-                    selectedFacet = facet
-                }
-            }
-            Spacer(minLength: 0)
+        // Prefer labeled tabs; collapse the whole strip to icons when width is tight.
+        return ViewThatFits(in: .horizontal) {
+            facetTabRow(available, labelStyle: .titleAndIcon)
+            facetTabRow(available, labelStyle: .iconOnly)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(.bar)
@@ -74,11 +72,30 @@ struct InspectorDetailView: View {
         }
     }
 
-    private func facetTab(_ facet: InspectorFacet, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func facetTabRow<S: LabelStyle>(
+        _ available: [InspectorFacet],
+        labelStyle: S
+    ) -> some View {
+        HStack(spacing: 4) {
+            ForEach(available) { facet in
+                facetTab(facet, selected: selectedFacet == facet, labelStyle: labelStyle) {
+                    selectedFacet = facet
+                }
+            }
+        }
+    }
+
+    private func facetTab<S: LabelStyle>(
+        _ facet: InspectorFacet,
+        selected: Bool,
+        labelStyle: S,
+        action: @escaping () -> Void
+    ) -> some View {
         // Plain buttons inside split-view detail often miss hits on macOS unless the
         // tappable shape is explicit; prefer a borderless button + contentShape.
         Button(action: action) {
             Label(facet.label, systemImage: facet.systemImage)
+                .labelStyle(labelStyle)
                 .font(.callout)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -99,7 +116,12 @@ struct InspectorDetailView: View {
 
         switch selectedFacet {
         case .overview:
-            OverviewFacetView(representation: representation, content: content, inspectorName: inspector?.displayName)
+            OverviewFacetView(
+                representation: representation,
+                content: content,
+                inspectorName: inspector?.displayName,
+                source: source
+            )
         case .source:
             SourceFacetView(representation: representation, content: content)
         case .metadata:

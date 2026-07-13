@@ -27,9 +27,16 @@ struct SnapshotRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(primaryLabel)
                     .lineLimit(1)
-                Text(Formatters.relativeDate(snapshot.capturedAt))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                HStack(spacing: 6) {
+                    Text(Formatters.relativeDate(snapshot.capturedAt))
+                    if let sourceLabel = snapshot.source?.label {
+                        Text("·")
+                        Text(sourceLabel)
+                            .lineLimit(1)
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.tertiary)
             }
 
             Spacer(minLength: 0)

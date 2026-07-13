@@ -8,10 +8,19 @@ import SwiftUI
 /// Classic offset / hex / ASCII dump for any representation.
 struct HexFacetView: View {
     let data: Data
+    @Environment(AppPreferences.self) private var preferences
 
     var body: some View {
         if data.isEmpty {
             ContentUnavailableView("Empty payload", systemImage: "number")
+        } else if data.count > preferences.maxHexDisplayBytes {
+            ContentUnavailableView(
+                "Payload too large for hex",
+                systemImage: "number",
+                description: Text(
+                    "\(Formatters.bytes(data.count)) exceeds the \(Formatters.bytes(preferences.maxHexDisplayBytes)) hex display limit. Raise it in Preferences to inspect this binary."
+                )
+            )
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {

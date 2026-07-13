@@ -36,35 +36,13 @@ extension ClipboardInspector {
     }
 }
 
-// MARK: - URL
-
-/// URL type inspector.
-///
-struct URLClipboardInspector: ClipboardInspector {
-    let displayName = "URL Inspector"
-    let priority: Int = 0
-    var supportedTypes: Set<UTType> = [.url, .fileURL]
-
-    func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
-        // Keep URL-typed payloads even when Foundation cannot parse them —
-        // the monitor should still surface the declared type + raw text.
-        guard let string = String(data: representation.data, encoding: .utf8),
-              string.isEmpty == false else { return nil }
-        return .url(raw: string, parsed: URL(string: string))
-    }
-
-    func supportedFacets(for representation: RawRepresentation) -> [InspectorFacet] {
-        [.overview, .metadata, .hex]
-    }
-}
-
 // MARK: - Plain text
 
 /// Plain text type inspector.
 ///
 struct PlainTextInspector: ClipboardInspector {
     let displayName = "Plain Text Inspector"
-    let priority: Int = 1
+    let priority: Int = 0
     var supportedTypes: Set<UTType> = [.plainText, .utf8PlainText, .utf16PlainText, .utf16ExternalPlainText]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
@@ -147,6 +125,28 @@ struct PlainTextInspector: ClipboardInspector {
     }
 }
 
+// MARK: - URL
+
+/// URL type inspector.
+///
+struct URLClipboardInspector: ClipboardInspector {
+    let displayName = "URL Inspector"
+    let priority: Int = 1
+    var supportedTypes: Set<UTType> = [.url, .fileURL]
+
+    func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
+        // Keep URL-typed payloads even when Foundation cannot parse them —
+        // the monitor should still surface the declared type + raw text.
+        guard let string = String(data: representation.data, encoding: .utf8),
+              string.isEmpty == false else { return nil }
+        return .url(raw: string, parsed: URL(string: string))
+    }
+
+    func supportedFacets(for representation: RawRepresentation) -> [InspectorFacet] {
+        [.overview, .metadata, .hex]
+    }
+}
+
 // MARK: - Rich Text
 
 /// RTF / RTFD inspector — parses pasteboard rich text into `AttributedString`.
@@ -187,13 +187,34 @@ struct RichTextInspector: ClipboardInspector {
     }
 }
 
+// MARK: - HTML
+
+/// HTML / XHTML inspector — keeps the markup source for Source/Metadata and Overview preview.
+///
+struct HTMLClipboardInspector: ClipboardInspector {
+    let displayName = "HTML Inspector"
+    /// Above rich/plain text so browser HTML wins as primary when siblings are present.
+    let priority: Int = 3
+    let supportedTypes: Set<UTType> = [.html]
+
+    func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
+        guard let string = String(data: representation.data, encoding: .utf8),
+              string.isEmpty == false else { return nil }
+        return .html(string)
+    }
+
+    func supportedFacets(for representation: RawRepresentation) -> [InspectorFacet] {
+        [.overview, .source, .metadata, .hex]
+    }
+}
+
 // MARK: - Image
 
 /// Image type inspector.
 ///
 struct ImageClipboardInspector: ClipboardInspector {
     let displayName = "Image Inspector"
-    let priority: Int = 3
+    let priority: Int = 4
     var supportedTypes: Set<UTType> = [.png, .jpeg, .exr, .bmp, .tiff, .pdf, .svg]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {
@@ -211,7 +232,7 @@ struct ImageClipboardInspector: ClipboardInspector {
 ///
 struct ColorClipboardInspector: ClipboardInspector {
     let displayName = "Color Inspector"
-    let priority: Int = 4
+    let priority: Int = 5
     let supportedTypes: Set<UTType> = [.appleColor]
 
     func inspect(_ representation: RawRepresentation) -> ClipboardContent? {

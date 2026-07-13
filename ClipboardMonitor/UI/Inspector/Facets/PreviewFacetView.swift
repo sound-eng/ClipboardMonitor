@@ -15,11 +15,13 @@ import UIKit
 struct PreviewFacetView: View {
     let content: ClipboardContent
 
+    @Environment(\.presentImagePreview) private var presentImagePreview
+
     var body: some View {
         Group {
             switch content {
             case .image(let data):
-                imagePreview(data)
+                imagePreviewThumbnail(data)
             case .url(let raw, let parsed):
                 urlPreview(raw: raw, parsed: parsed)
             case .plainText(let text, _):
@@ -28,6 +30,8 @@ struct PreviewFacetView: View {
                     .textSelection(.enabled)
             case .richText(let attributed):
                 richTextPreview(attributed)
+            case .html(let source):
+                htmlPreview(source)
             case .color:
                 colorPreview
             case .unknown:
@@ -51,6 +55,53 @@ struct PreviewFacetView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .strokeBorder(.quaternary)
             )
+    }
+
+    /// Minimal HTML preview: Foundation's HTML → attributed text (no WebKit / JS).
+    @ViewBuilder
+    private func htmlPreview(_ source: String) -> some View {
+        if let attributed = attributedString(fromHTML: source) {
+            Text(attributed)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+                .padding(12)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .background(documentPaperColor(for: attributed), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(.quaternary)
+                )
+        } else {
+            // Fall back to a short source snippet when HTML can't be rendered.
+            Text(source)
+                .font(.system(.body, design: .monospaced))
+                .lineLimit(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+                .padding(12)
+                .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(.quaternary)
+                )
+        }
+    }
+
+    private func attributedString(fromHTML source: String) -> AttributedString? {
+        guard let data = source.data(using: .utf8) else { return nil }
+        do {
+            let ns = try NSAttributedString(
+                data: data,
+                options: [
+                    .documentType: NSAttributedString.DocumentType.html,
+                    .characterEncoding: String.Encoding.utf8.rawValue
+                ],
+                documentAttributes: nil
+            )
+            return AttributedString(ns)
+        } catch {
+            return nil
+        }
     }
 
     /// Card fill for rich-text preview: dominant run background when it covers most
@@ -100,25 +151,42 @@ struct PreviewFacetView: View {
     }
 
     @ViewBuilder
-    private func imagePreview(_ data: Data) -> some View {
+    private func imagePreviewThumbnail(_ data: Data) -> some View {
         #if os(macOS)
         if let nsImage = NSImage(data: data) {
-            Image(nsImage: nsImage)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, maxHeight: 320)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Button {
+                presentImagePreview(data)
+            } label: {
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: 320)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .help("Show full-window preview")
+            .accessibilityLabel("Image preview")
+            .accessibilityHint("Shows a full-window preview")
         } else {
             Text("Unreadable image")
                 .foregroundStyle(.secondary)
         }
         #else
         if let uiImage = UIImage(data: data) {
-            Image(uiImage: uiImage)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, maxHeight: 320)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Button {
+                presentImagePreview(data)
+            } label: {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: .infinity, maxHeight: 320)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .contentShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Image preview")
+            .accessibilityHint("Shows a full-window preview")
         } else {
             Text("Unreadable image")
                 .foregroundStyle(.secondary)

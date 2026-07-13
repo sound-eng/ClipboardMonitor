@@ -21,6 +21,7 @@ final class ClipboardClassifier {
     static let `default` = ClipboardClassifier(inspectors: [
         URLClipboardInspector(),
         RichTextInspector(),
+        HTMLClipboardInspector(),
         PlainTextInspector(),
         ImageClipboardInspector(),
         ColorClipboardInspector()

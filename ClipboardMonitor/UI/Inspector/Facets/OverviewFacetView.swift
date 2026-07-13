@@ -11,6 +11,7 @@ struct OverviewFacetView: View {
     let representation: RawRepresentation
     let content: ClipboardContent
     let inspectorName: String?
+    var source: PasteboardSource? = nil
 
     var body: some View {
         ScrollView {
@@ -20,6 +21,9 @@ struct OverviewFacetView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 16) {
+                    if let source {
+                        overviewRow("Source", value: sourceOverviewValue(source))
+                    }
                     overviewRow("Type", value: typeDescription)
                     overviewRow("Size", value: sizeDescription)
                     overviewRow("Inspector", value: inspectorName ?? "Unknown")
@@ -59,6 +63,22 @@ struct OverviewFacetView: View {
     private var sizeDescription: String {
         let count = representation.data.count
         return "\(Formatters.bytes(count)) (\(count.formatted()) bytes)"
+    }
+
+    private func sourceOverviewValue(_ source: PasteboardSource) -> String {
+        var parts = [source.label]
+        if let bundle = source.bundleIdentifier, bundle != source.label {
+            parts.append(bundle)
+        }
+        switch source.attribution {
+        case .declared:
+            parts.append("via org.nspasteboard.source")
+        case .frontmost:
+            parts.append("inferred (frontmost)")
+        case .unknown:
+            break
+        }
+        return parts.joined(separator: " · ")
     }
 
     /// Approximate conformance chain via well-known parents.

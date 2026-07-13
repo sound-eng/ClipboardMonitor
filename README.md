@@ -2,17 +2,19 @@
 
 Developer-oriented clipboard inspector for Apple platforms. It watches the pasteboard, captures each change as a snapshot, and lets you inspect every representation the system exposes — not just the “obvious” text or image.
 
-**Current release: 0.2.0**
+**Current release: 0.7.0**
 
 ## What it does
 
-- Polls the system pasteboard and records changes automatically
-- Classifies representations (plain text, rich text, URL, image, color, and unknowns)
-- Shows a three-pane inspector UI:
-  - **History** - recent snapshots with readable titles
-  - **Representations** - all UTTypes in the selected snapshot (primary first)
-  - **Inspector** - overview (with inline preview), source, metadata, hex, and compare
-- Persists up to 100 snapshots with SwiftData (oldest entries are evicted)
+- Watches the pasteboard and records each change as a snapshot (macOS: poll or on-foreground; iOS: on-foreground)
+- Classifies representations (plain text, rich text, HTML, URL, image, color, and unknowns)
+- Shows an inspector UI:
+  - **History** - recent snapshots with titles and (on macOS) source app
+  - **Inspector** - overview (with inline preview; images open full-window), source, metadata, hex, and compare
+  - **Representations** - all UTTypes in the selected snapshot (primary first), under the inspector
+- **Follow Latest** keeps the inspector on the newest copy, with a badge when you drift behind
+- Preferences for history size, hex display limit, and (macOS) monitoring mode
+- Persists snapshots with SwiftData (rolling cap; default 100)
 
 ## Requirements
 
@@ -40,7 +42,7 @@ xcodebuild -scheme ClipboardMonitor -destination 'platform=macOS' test
 ClipboardMonitor/
 ├── Core/          # Pure domain: snapshots, classifiers, inspectors, repository protocol
 ├── Infra/         # Platform + persistence: pasteboard I/O, SwiftData models
-└── UI/            # SwiftUI 3-pane inspector
+└── UI/            # SwiftUI inspector chrome
 ```
 
 - **Core** stays free of AppKit/UIKit/SwiftData
@@ -51,7 +53,7 @@ Design notes and the original UI plan live in [`Design/implementation_plan.md`](
 
 ## Primary representation
 
-When a snapshot has several supported types, the **primary** one (shown first and selected by default) prefers representations that expose a **Metadata** facet, then falls back to inspector priority (color → image → text → URL).
+When a snapshot has several supported types, the **primary** one (shown first and selected by default) prefers representations that expose a **Metadata** facet, then falls back to inspector priority (color → image → HTML → rich text → URL → plain text).
 
 ## Changelog
 

@@ -16,7 +16,8 @@ extension PersistedSnapshot {
         return PasteboardSnapshot(
             id: id,
             capturedAt: capturedAt,
-            items: [RawPasteboardItem(representations: reps)]
+            items: [RawPasteboardItem(representations: reps)],
+            source: restoredSource
         )
     }
 
@@ -25,7 +26,25 @@ extension PersistedSnapshot {
         let reps = snapshot.representations.map {
             PersistedRepresentation(rawType: $0.rawType, data: $0.data)
         }
-        self.init(id: snapshot.id, capturedAt: snapshot.capturedAt, representations: reps)
+        self.init(
+            id: snapshot.id,
+            capturedAt: snapshot.capturedAt,
+            sourceBundleIdentifier: snapshot.source?.bundleIdentifier,
+            sourceDisplayName: snapshot.source?.displayName,
+            sourceAttribution: snapshot.source?.attribution.rawValue,
+            representations: reps
+        )
+    }
+
+    private var restoredSource: PasteboardSource? {
+        guard let sourceAttribution,
+              let attribution = PasteboardSourceAttribution(rawValue: sourceAttribution)
+        else { return nil }
+        return PasteboardSource(
+            bundleIdentifier: sourceBundleIdentifier,
+            displayName: sourceDisplayName,
+            attribution: attribution
+        )
     }
 }
 
