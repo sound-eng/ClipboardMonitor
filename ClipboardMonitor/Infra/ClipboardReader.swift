@@ -12,6 +12,8 @@ import UIKit
 import UniformTypeIdentifiers
 
 protocol ClipboardReading {
+    /// Pasteboard generation counter. Unchanged value means content was not replaced.
+    var changeCount: Int { get }
     func readSnapshot() -> PasteboardSnapshot
 }
 
@@ -22,6 +24,8 @@ final class ClipboardReader: ClipboardReading {
     init(pasteboard: PlatformPasteboard = .general) {
         self.pasteboard = pasteboard
     }
+
+    var changeCount: Int { pasteboard.changeCount }
 
     func readSnapshot() -> PasteboardSnapshot {
         #if os(macOS)
@@ -49,7 +53,8 @@ final class ClipboardReader: ClipboardReading {
                 RawPasteboardItem(
                     representations: item.compactMap { (key, value) -> RawRepresentation? in
                         let rawType = key
-                        let resolvedType = UTType(rawType)
+                        // Match macOS / persistence: importedAs covers undeclared third-party types.
+                        let resolvedType = UTType(rawType) ?? UTType(importedAs: rawType)
                         let data: Data
                         if let d = value as? Data {
                             data = d
@@ -102,5 +107,6 @@ final class ClipboardReader: ClipboardReading {
 @MainActor
 final class FakePasteboardReader: ClipboardReading {
     var snapshotToReturn = PasteboardSnapshot(items: [])
+    var changeCount = 0
     func readSnapshot() -> PasteboardSnapshot { snapshotToReturn }
 }

@@ -59,6 +59,33 @@ struct PasteboardSnapshot: Identifiable, Hashable {
     var representations: [RawRepresentation] {
         items.flatMap(\.representations)
     }
+
+    /// Whether this snapshot carries the same clipboard payload as `other`.
+    ///
+    /// Ignores item boundaries, representation order, and resolved `UTType` —
+    /// all of which can diverge between a live pasteboard read and a SwiftData
+    /// round-trip (persistence flattens items and may re-resolve types).
+    func hasSameClipboardContent(as other: PasteboardSnapshot) -> Bool {
+        contentFingerprint == other.contentFingerprint
+    }
+
+    /// Stable identity over `(rawType, data)` pairs, sorted for order invariance.
+    private var contentFingerprint: [ClipboardContentKey] {
+        representations
+            .map { ClipboardContentKey(rawType: $0.rawType, data: $0.data) }
+            .sorted()
+    }
+}
+
+/// Order- and structure-invariant key for consecutive-duplicate detection.
+private struct ClipboardContentKey: Hashable, Comparable {
+    let rawType: String
+    let data: Data
+
+    static func < (lhs: ClipboardContentKey, rhs: ClipboardContentKey) -> Bool {
+        if lhs.rawType != rhs.rawType { return lhs.rawType < rhs.rawType }
+        return lhs.data.lexicographicallyPrecedes(rhs.data)
+    }
 }
 
 /// Single pasteboard item with all available representations.

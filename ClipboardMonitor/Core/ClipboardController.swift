@@ -14,6 +14,9 @@ final class ClipboardController {
     private let repository: any SnapshotRepositoryProtocol
     private let classifier: ClipboardClassifier
     private var task: Task<Void, Never>?
+    /// Last pasteboard generation we successfully considered. Avoids re-reading
+    /// unchanged content on every iOS foreground activation.
+    private var lastCapturedChangeCount: Int?
 
     init(
         repository: any SnapshotRepositoryProtocol,
@@ -46,14 +49,26 @@ final class ClipboardController {
     }
 
     /// Reads the current pasteboard, stores a snapshot, and classifies for side-effect logging.
-    /// Skips empty pasteboards and consecutive duplicates (e.g. relaunch with unchanged clipboard).
+    /// Skips empty pasteboards and consecutive duplicates (e.g. relaunch / foreground
+    /// with unchanged clipboard). Prefer `changeCount`; fall back to content fingerprint
+    /// when changeCount is unknown (cold start) or when the pasteboard was rewritten
+    /// with identical payload.
     func captureSnapshot() {
-        let snapshot = reader.readSnapshot()
-        guard !snapshot.representations.isEmpty else { return }
-        if let latest = repository.snapshots.first, latest.items == snapshot.items {
+        let changeCount = reader.changeCount
+        if lastCapturedChangeCount == changeCount {
             return
         }
+
+        let snapshot = reader.readSnapshot()
+        guard !snapshot.representations.isEmpty else { return }
+
+        if let latest = repository.snapshots.first, latest.hasSameClipboardContent(as: snapshot) {
+            lastCapturedChangeCount = changeCount
+            return
+        }
+
         repository.add(snapshot)
+        lastCapturedChangeCount = changeCount
         _ = snapshot.items.map(classifier.classify)
     }
 
